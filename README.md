@@ -1,4 +1,4 @@
-# JRAP
+# JFirebase
 
 A utility to help users to work with nosql databases.
 

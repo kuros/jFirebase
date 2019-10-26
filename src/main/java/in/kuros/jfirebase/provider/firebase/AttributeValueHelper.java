@@ -71,7 +71,7 @@ public class AttributeValueHelper {
                     final Field field = attributeValue.getAttribute().getField();
                     field.setAccessible(true);
                     try {
-                        if (Map.class.isAssignableFrom(field.getType())) {
+                        if (MapAttributeValue.class.isAssignableFrom(field.getType())) {
                             final Map map = getMapValueForField(entity, attributeValue, field);
                             field.set(entity, map);
                         } else {

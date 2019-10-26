@@ -1,12 +1,12 @@
 package in.kuros.jfirebase.demo.entity;
 
-import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.MapAttribute;
+import in.kuros.jfirebase.metadata.Metadata;
 
 import java.util.Date;
 
-@Entity("employee")
+@Metadata(Employee.class)
 public class Employee_ {
 
     public static volatile Attribute<Employee, String> employeeId;
