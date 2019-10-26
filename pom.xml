@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <groupId>in.kuros</groupId>
+    <artifactId>jFirebase</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+
+    <description>This project aims at building a wrapper over nosql technologies - Firebase</description>
+    <url>https://github.com/kuros/jrap</url>
+
+    <inceptionYear>2019</inceptionYear>
+
+    <licenses>
+        <license>
+            <name>GNU LESSER GENERAL PUBLIC LICENSE v3</name>
+            <url>http://www.gnu.org/licenses/lgpl.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Kumar Rohit</name>
+            <email>incrediblevicky at gmail dot com</email>
+            <roles>
+                <role>Maintainer</role>
+                <role>Developer</role>
+            </roles>
+            <timezone>+5:30</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/kuros/jrap.git</connection>
+        <developerConnection>scm:git:git@github.com:kuros/jrap.git</developerConnection>
+        <url>https://github.com/kuros/jrap</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/kuros/jrap/issues</url>
+    </issueManagement>
+
+    <properties>
+        <guava.version>25.1-jre</guava.version>
+        <firebase-admin.version>6.10.0</firebase-admin.version>
+        <lombok.version>1.18.10</lombok.version>
+        <surefire.version>2.17</surefire.version>
+        <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
+        <maven-source-plugin.version>2.1.2</maven-source-plugin.version>
+    </properties>
+
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>${firebase-admin.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+    </dependencies>
+
+
+    <repositories>
+        <repository>
+            <id>maven-central</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>oosrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <excludes>
+                    <exclude>**/*.java</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>${project.basedir}/src/test/resources</directory>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.6.2</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <debug>true</debug>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.1</version>
+                <configuration>
+                    <arguments>-Psonatype-oss-release,random-jpa-release</arguments>
+                    <pushChanges>false</pushChanges>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.version}</version>
+                <configuration>
+                    <testNGArtifactName>none:none</testNGArtifactName>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.7.6.201602180812</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+                <version>${coveralls-maven-plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>jrap-release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-deploy-plugin</artifactId>
+                        <version>2.7</version>
+                        <configuration>
+                            <updateReleaseInfo>true</updateReleaseInfo>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.3</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>package</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>2.3</version>
+                        <configuration>
+                            <descriptorRefs>
+                                <descriptorRef>jar-with-dependencies</descriptorRef>
+                            </descriptorRefs>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id> <!-- this is used for inheritance merges -->
+                                <phase>package</phase> <!--  bind to the packaging phase -->
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>
