@@ -2,6 +2,7 @@ package in.kuros.jfirebase.metadata;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AttributeValueBuilder<T> {
     private final List<AttributeValue<T, ?>> attributes;
@@ -23,6 +24,11 @@ public class AttributeValueBuilder<T> {
 
     public <K, V> AttributeValueBuilder<T> with(final MapAttribute<T, K, V> attribute, final K key, final V value) {
         this.attributes.add(MapAttributeValue.of(attribute, key, value));
+        return this;
+    }
+
+    public <K, V> AttributeValueBuilder<T> with(final MapAttribute<T, K, V> attribute, final Map<K, V> value) {
+        this.attributes.add(MapAttributeValue.of(attribute, value));
         return this;
     }
 

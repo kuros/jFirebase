@@ -138,4 +138,227 @@ We can update multiple fields, Use AttributeValue
 
 ## Working with sub hierarchy
 
-Let's say you want to map sub collection 
+Let's say you want to map sub collection, you need to create a pojo with parent id reference.
+
+```java
+package in.kuros.jfirebase.demo.entity;
+
+import in.kuros.jfirebase.entity.Entity;
+import in.kuros.jfirebase.entity.Id;
+import in.kuros.jfirebase.entity.IdReference;
+import in.kuros.jfirebase.entity.Parent;
+import in.kuros.jfirebase.entity.UpdateTime;
+
+import java.util.Date;
+import java.util.Map;
+
+@Entity("employee")
+public class Employee {
+
+    @Id
+    private String employeeId;
+
+    @Parent
+    @IdReference(Person.class)
+    private String personId;
+
+    private Date joiningDate;
+    private Integer salary;
+    private Map<String, String> phoneNumbers;
+
+    @UpdateTime
+    private Date modifiedDate;
+}
+```
+
+Here we are using @Parent with @IdReference to map parent information.
+
+Also note, to save phone numbers we are using a map. Its corresponding Metadata class will be:
+
+```java
+package in.kuros.jfirebase.demo.entity;
+
+import in.kuros.jfirebase.entity.Entity;
+import in.kuros.jfirebase.metadata.Attribute;
+import in.kuros.jfirebase.metadata.MapAttribute;
+
+import java.util.Date;
+
+@Entity("employee")
+public class Employee_ {
+
+    public static volatile Attribute<Employee, String> employeeId;
+    public static volatile Attribute<Employee, String> personId;
+    public static volatile Attribute<Employee, Date> joiningDate;
+    public static volatile Attribute<Employee, Integer> salary;
+    public static volatile MapAttribute<Employee, String, String> phoneNumbers;
+    public static volatile Attribute<Employee, Date> modifiedDate;
+
+}
+```
+
+Now to create a Employee entry within Person collection, simply create Employee object with person reference.
+
+```java
+    public void createSubCollection() {
+        final Employee employee = new Employee();
+        employee.setEmployeeId("123"); // Optional if you want custom id
+        employee.setPersonId("1");
+        employee.setJoiningDate(new Date());
+        employee.setSalary(5000);
+
+        final Map<String, String> phoneNumbers = new HashMap<>();
+        phoneNumbers.put("office", "123-345-567");
+        phoneNumbers.put("home", "456-789-456");
+        employee.setPhoneNumbers(phoneNumbers);
+
+        persistenceService.create(employee);
+    }
+```
+
+## Update Map values
+
+Let's we want to update specific value in a map (home phone number).
+
+```java
+    public void updateMapUsingKeyValue() {
+        persistenceService.set(AttributeValue
+                .with(Employee_.employeeId, "123") // Required field
+                .with(Employee_.personId, "1") // Required field
+                .with(Employee_.phoneNumbers, "home", "111-111-111")
+                .build());
+    }
+```
+
+or we can completely replace all the phoneNumbers
+```java
+    public void updateCompleteMapValues() {
+        final Map<String, String> phoneNumbers = new HashMap<>();
+        phoneNumbers.put("office", "123-345-XXX");
+        phoneNumbers.put("home", "456-789-XXX");
+
+        persistenceService.set(AttributeValue
+                .with(Employee_.employeeId, "123") // Required field
+                .with(Employee_.personId, "1") // Required field
+                .with(Employee_.phoneNumbers, phoneNumbers)
+                .build());
+    }
+```
+
+## Removing Fields
+In order to delete just a field from the entry, Use: 
+```java
+    public void removeFields() {
+        persistenceService.remove(RemoveAttribute.withKeys(Employee_.personId, "1")
+                .withKey(Employee_.employeeId, "123")
+                .remove(Employee_.salary)
+                .removeMapKey(Employee_.phoneNumbers, "home"));
+    }
+``` 
+Here we have deleted salary field and an entry of 'home' from phone numbers.
+
+## Delete Record
+
+To delete a complete record:
+
+```java
+    public void deleteCompleteRecord() {
+        final Employee employee = new Employee();
+        employee.setEmployeeId("123");
+        employee.setPersonId("1");
+        persistenceService.delete(employee);
+    }
+```
+You need to populate required id fields.
+
+## Query
+
+To query you need to provide classes in order.
+
+Let's say you want to find with salary greater than 1000.
+```java
+    public void query() {
+        final List<Employee> employees = persistenceService
+                .find(QueryBuilder
+                        .collection(Person.class)
+                        .withId("1")
+                        .subCollection(Employee.class)
+                        .withId("123")
+                        .whereGreaterThan(Employee_.salary, 1000));
+        System.out.println(employees);
+    }
+```
+
+## Find by Id
+
+To find a record by Id:
+```java
+    public void queryFindById() {
+        final Employee employee = persistenceService
+                .findById(QueryBuilder
+                        .collection(Person.class)
+                        .withId("1")
+                        .subCollection(Employee.class)
+                        .withId("123"));
+    }
+```
+
+## Select few fields
+ 
+Let's say you want to fetch only salaries of all the employees:
+```java
+    public void querySelectedFields() {
+        final List<Employee> employees = persistenceService
+                .find(QueryBuilder
+                        .collection(Person.class)
+                        .withId("1")
+                        .subCollection(Employee.class)
+                        .withId("123")
+                        .select(Employee_.employeeId, Employee_.salary));
+
+    }
+```
+
+## Running Transaction
+
+You can run the transaction and execute multiple queries in it.
+
+```java
+    public void runTransactionExample() {
+        final List<Employee> updatedEmployees = persistenceService.runTransaction(transaction -> {
+            final List<Employee> employees = transaction.get(QueryBuilder
+                    .collection(Person.class)
+                    .withId("1")
+                    .subCollection(Employee.class)
+                    .withId("123"));
+
+            employees.stream()
+                    .peek(emp -> emp.setSalary(6000))
+                    .forEach(transaction::set);
+            return employees;
+        });
+    }
+```
+
+## Batching 
+
+You can batch multiple statements and commit them at once.
+
+```java
+    public void runBatchExample() {
+            persistenceService.writeInBatch(writeBatch -> {
+                writeBatch.set(AttributeValue
+                        .with(Person_.personId, "2") // Required field
+                        .with(Person_.name, "Jon") // Required field
+                        .with(Person_.age, 25)
+                        .build());
+    
+                writeBatch.set(AttributeValue
+                        .with(Employee_.employeeId, "123") // Required field
+                        .with(Employee_.personId, "2") // Required field
+                        .with(Employee_.phoneNumbers, "home", "222-222-222")
+                        .build());
+            });
+        }
+``` 
+ 
