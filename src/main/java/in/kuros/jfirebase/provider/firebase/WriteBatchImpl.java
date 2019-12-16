@@ -10,6 +10,7 @@ import com.google.cloud.firestore.UpdateBuilder;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
+import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
 import java.util.Arrays;
@@ -87,6 +88,17 @@ public class WriteBatchImpl implements WriteBatch {
         final DocumentReference documentReference = getDocumentReference(entity);
         updateBuilder.update(documentReference, valueMap);
 
+    }
+
+    @Override
+    public <T> void update(final UpdateAttribute<T> updateAttribute) {
+        final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
+        final Class<T> type = UpdateAttribute.Helper.getDeclaringClass(updateAttribute);
+        final T entity = attributeValueHelper.createEntity(type, UpdateAttribute.Helper.getKeys(updateAttribute));
+        final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
+        valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
+        final DocumentReference documentReference = getDocumentReference(entity);
+        updateBuilder.update(documentReference, valueMap);
     }
 
     @Override

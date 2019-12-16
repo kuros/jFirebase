@@ -17,6 +17,7 @@ import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
+import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
@@ -126,6 +127,21 @@ class PersistenceServiceImpl implements PersistenceService {
             final T entity = attributeValueHelper.createEntity(type, RemoveAttribute.Helper.getKeys(removeAttribute));
 
             final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
+
+            final DocumentReference documentReference = getDocumentReference(entity);
+            documentReference.update(valueMap).get();
+        } catch (final Exception e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    public <T> void update(final UpdateAttribute<T> updateAttribute) {
+        final Class<T> type = UpdateAttribute.Helper.getDeclaringClass(updateAttribute);
+        try {
+            final T entity = attributeValueHelper.createEntity(type, UpdateAttribute.Helper.getKeys(updateAttribute));
+
+            final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
+            valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
 
             final DocumentReference documentReference = getDocumentReference(entity);
             documentReference.update(valueMap).get();

@@ -4,6 +4,7 @@ package in.kuros.jfirebase;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
+import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
@@ -24,6 +25,8 @@ public interface PersistenceService {
     <T> void set(List<AttributeValue<T, ?>> attributeValues);
 
     <T> void remove(RemoveAttribute<T> removeAttribute);
+
+    <T> void update(final UpdateAttribute<T> updateAttribute);
 
     void updateFields(String path, String field, Object value);
 
