@@ -17,6 +17,7 @@ import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
+import in.kuros.jfirebase.metadata.SetAttribute;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.query.Query;
@@ -114,6 +115,32 @@ class PersistenceServiceImpl implements PersistenceService {
 
             final DocumentReference documentReference = getDocumentReference(entity);
             documentReference.set(entity, SetOptions.mergeFieldPaths(fieldPaths)).get();
+        } catch (final Exception e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    @Override
+    public <T> void set(final SetAttribute<T> setAttribute) {
+        final Class<T> type = SetAttribute.Helper.getDeclaringClass(setAttribute);
+        try {
+            final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
+            final List<AttributeValue<T, ?>> updateValues = SetAttribute.Helper.getAttributeValues(setAttribute);
+
+            attributeValues.addAll(updateValues);
+
+
+            final T entity = attributeValueHelper.createEntity(type, attributeValues);
+
+            final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateValues);
+
+            if (entityHelper.setUpdateTime(entity)) {
+                fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
+            }
+
+            final DocumentReference documentReference = getDocumentReference(entity);
+            documentReference.set(entity, SetOptions.mergeFieldPaths(fieldPaths)).get();
+
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }

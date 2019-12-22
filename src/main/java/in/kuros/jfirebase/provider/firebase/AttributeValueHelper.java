@@ -4,6 +4,7 @@ import com.google.cloud.firestore.FieldPath;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
+import in.kuros.jfirebase.metadata.ValuePath;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
