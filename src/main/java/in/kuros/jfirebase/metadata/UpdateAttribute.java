@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 
@@ -36,8 +37,18 @@ public final class UpdateAttribute<T> {
         return this;
     }
 
+    public <V> UpdateAttribute<T> updateFieldValue(final Attribute<T, ?> attribute, final Supplier<V> valueSupplier) {
+        attributesToUpdate.add(AttributeValueImpl.of(attribute, Value.of(valueSupplier.get())));
+        return this;
+    }
+
     public <K, V> UpdateAttribute<T> update(final MapAttribute<T, K, V> mapAttribute, final K key, final V value) {
         attributesToUpdate.add(MapAttributeValue.of(mapAttribute, key, value));
+        return this;
+    }
+
+    public <K, V> UpdateAttribute<T> updateFieldValue(final MapAttribute<T, K, ?> mapAttribute, final K key, final Supplier<V> valueSupplier) {
+        attributesToUpdate.add(new MapAttributeValueImpl<>(mapAttribute, key, Value.of(valueSupplier.get())));
         return this;
     }
 

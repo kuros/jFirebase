@@ -10,6 +10,7 @@ import com.google.cloud.firestore.UpdateBuilder;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
+import in.kuros.jfirebase.metadata.SetAttribute;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
@@ -77,6 +78,24 @@ public class WriteBatchImpl implements WriteBatch {
         final DocumentReference documentReference = getDocumentReference(entity);
         updateBuilder.set(documentReference, entity, SetOptions.mergeFieldPaths(fieldPaths));
 
+    }
+
+    @Override
+    public <T> void set(final SetAttribute<T> setAttribute) {
+        final Class<T> type = SetAttribute.Helper.getDeclaringClass(setAttribute);
+        final List<AttributeValue<T, ?>> updateAttributes = SetAttribute.Helper.getAttributeValues(setAttribute);
+        final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
+        attributeValues.addAll(updateAttributes);
+        final T entity = attributeValueHelper.createEntity(type, attributeValues);
+
+        final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateAttributes);
+
+        if (entityHelper.setUpdateTime(entity)) {
+            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
+        }
+
+        final DocumentReference documentReference = getDocumentReference(entity);
+        updateBuilder.set(documentReference, entity, SetOptions.mergeFieldPaths(fieldPaths));
     }
 
     @Override
