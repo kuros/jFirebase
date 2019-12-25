@@ -11,7 +11,7 @@ class MetadataProcessorTest {
 
     @Test
     void shouldInitialiseMetaModel() throws Exception {
-        MetadataProcessor.init("in.kuros.jfirebase.metadata");
+        MetadataProcessor.init("in.kuros.jfirebase");
 
         assertNotNull(TestClass_.testId);
         assertEquals(TestClass.class, TestClass_.testId.getDeclaringType());

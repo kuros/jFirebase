@@ -1,12 +1,13 @@
 package in.kuros.jfirebase.metadata;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
+import in.kuros.jfirebase.reflection.MetadataScanner;
+import org.reflections.Reflections;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -22,14 +23,15 @@ public final class MetadataProcessor {
         }
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private void initializeMetaModel(final String basePackage) {
         try {
-            final ClassPath classPath = ClassPath.from(MetadataProcessor.class.getClassLoader());
-            final ImmutableSet<ClassPath.ClassInfo> classInfo = classPath.getTopLevelClassesRecursive(basePackage);
+            final Reflections reflections = new Reflections(basePackage, new MetadataScanner());
 
-            for (ClassPath.ClassInfo info : classInfo) {
-                final Class<?> type = Class.forName(info.getName());
+            final Set<String> classNames = reflections.getStore().get(MetadataScanner.class.getSimpleName()).keySet();
+
+            for (String className : classNames) {
+                final Class<?> type = Class.forName(className);
+
                 final Metadata metadata = type.getAnnotation(Metadata.class);
                 if (metadata == null) {
                     continue;
@@ -42,11 +44,11 @@ public final class MetadataProcessor {
                 final Field[] fields = type.getDeclaredFields();
                 for (Field field : fields) {
                     if (!allFields.containsKey(field.getName())) {
-                        throw new MetadataException("field not mapped correctly: " + field.getName() + ", class: " + info.getName());
+                        throw new MetadataException("field not mapped correctly: " + field.getName() + ", class: " + className);
                     }
 
                     if (!Attribute.class.isAssignableFrom(field.getType())) {
-                        throw new MetadataException("field should be of type Attribute: " + field.getName() + ", class: " + info.getName());
+                        throw new MetadataException("field should be of type Attribute: " + field.getName() + ", class: " + className);
                     }
 
                     if (MapAttribute.class.isAssignableFrom(field.getType())) {
