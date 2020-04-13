@@ -2,10 +2,13 @@ package in.kuros.jfirebase.query;
 
 
 import in.kuros.jfirebase.metadata.Attribute;
+import in.kuros.jfirebase.metadata.MapAttribute;
 
 public interface Query<T> {
 
     <X> Query<T> whereEqualTo(Attribute<T, X> field, X value);
+
+    <K, V> Query<T> whereEqualTo(MapAttribute<T, K, V> field, K key, V value);
 
     <X> Query<T> whereEqualTo(String field, X value);
 

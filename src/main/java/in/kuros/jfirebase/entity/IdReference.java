@@ -8,5 +8,9 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface IdReference {
-    Class<?> value();
+    Class<?> value() default DEFAULT.class;
+
+    String collection() default "";
+
+    final class DEFAULT {}
 }

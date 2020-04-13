@@ -1,5 +1,6 @@
 package in.kuros.jfirebase.provider.firebase;
 
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
@@ -121,17 +122,32 @@ public class EntityHelperImpl implements EntityHelper {
         final List<MappedClassField> mappedClassFields = EntityParentCache.INSTANCE.getMappedClassFields(entity.getClass());
 
         for (MappedClassField mappedClassField : mappedClassFields) {
-            final Entity parentEntity = EntityHelper.getEntity(mappedClassField.getMappedClass());
+
             final String parentId = getValueInString(entity, mappedClassField.getField());
             if (parentId == null) {
                 throw new EntityDeclarationException("parent id cannot be null: " + mappedClassField.getField());
             }
 
-            stringBuilder.append(parentEntity.value())
+            stringBuilder.append(getParentCollection(mappedClassField))
                     .append("/")
                     .append(parentId)
                     .append("/");
         }
+    }
+
+    private String getParentCollection(final MappedClassField mappedClassField) {
+        final String value;
+        if (mappedClassField.getMappedClass() == IdReference.DEFAULT.class) {
+            final IdReference reference = mappedClassField.getField().getAnnotation(IdReference.class);
+            value = reference.collection();
+            if (Strings.isNullOrEmpty(value)) {
+                throw new EntityDeclarationException("Id Reference class/collection not provided: " + mappedClassField.getField());
+            }
+        } else {
+            final Entity parentEntity = EntityHelper.getEntity(mappedClassField.getMappedClass());
+            value = parentEntity.value();
+        }
+        return value;
     }
 
     private Field getIdField(final Class<?> type) {

@@ -59,6 +59,30 @@ class EntityHelperImplTest {
     }
 
     @Test
+    void shouldGetDocumentPathForHierarchyEntityCollectionReference() {
+        final EntityParentCollectionReference object = new EntityParentCollectionReference();
+       object.setId(RandomStringUtils.randomAlphanumeric(4));
+       object.setParentId(RandomStringUtils.randomAlphanumeric(4));
+       object.setName(RandomStringUtils.randomAlphanumeric(4));
+
+        final String documentPath = EntityHelper.INSTANCE.getDocumentPath(object);
+
+        Assertions.assertEquals("parent-ref/" + object.getParentId() + "/child/" + object.getId(),  documentPath);
+    }
+
+    @Test
+    void shouldthrowExceptionIfCollectionReferenceIsEmpty() {
+        final EmptyParentCollectionReference object = new EmptyParentCollectionReference();
+       object.setId(RandomStringUtils.randomAlphanumeric(4));
+       object.setParentId(RandomStringUtils.randomAlphanumeric(4));
+       object.setName(RandomStringUtils.randomAlphanumeric(4));
+
+       Assertions.assertThrows(EntityDeclarationException.class, () -> EntityHelper.INSTANCE.getDocumentPath(object));
+    }
+
+
+
+    @Test
     void shouldGetCollectionForHierarchyEntity() {
         final EntityObject object = new EntityObject();
        object.setId(RandomStringUtils.randomAlphanumeric(4));
@@ -202,4 +226,37 @@ class EntityHelperImplTest {
         private Date updateTime;
     }
 
+    @Data
+    @Entity("child")
+    private static class EntityParentCollectionReference {
+        @Id
+        private String id;
+        @Parent
+        @IdReference(collection = "parent-ref")
+        private String parentId;
+        private String name;
+
+        @CreateTime
+        private Date created;
+
+        @UpdateTime
+        private Date updateTime;
+    }
+
+    @Data
+    @Entity("child")
+    private static class EmptyParentCollectionReference {
+        @Id
+        private String id;
+        @Parent
+        @IdReference
+        private String parentId;
+        private String name;
+
+        @CreateTime
+        private Date created;
+
+        @UpdateTime
+        private Date updateTime;
+    }
 }

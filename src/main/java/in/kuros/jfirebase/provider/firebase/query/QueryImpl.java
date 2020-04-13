@@ -1,6 +1,7 @@
 package in.kuros.jfirebase.provider.firebase.query;
 
 import in.kuros.jfirebase.metadata.Attribute;
+import in.kuros.jfirebase.metadata.MapAttribute;
 import in.kuros.jfirebase.query.Query;
 
 import java.util.ArrayList;
@@ -23,6 +24,11 @@ abstract class QueryImpl<T> implements Query<T> {
     public <X> Query<T> whereEqualTo(final Attribute<T, X> field, final X value) {
         whereEqualTo(field.getName(), value);
         return this;
+    }
+
+    @Override
+    public <K, V> Query<T> whereEqualTo(final MapAttribute<T, K, V> field, final K key, final V value) {
+        return whereEqualTo(field.getName() + "." + key, value);
     }
 
     @Override

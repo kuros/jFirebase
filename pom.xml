@@ -12,7 +12,7 @@
 
     <groupId>in.kuros</groupId>
     <artifactId>jFirebase</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
 
 
     <description>This project aims at building a wrapper over nosql technologies - Firebase</description>
@@ -146,6 +146,7 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <testNGArtifactName>none:none</testNGArtifactName>
+                    <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
                 </configuration>
             </plugin>
             <plugin>
