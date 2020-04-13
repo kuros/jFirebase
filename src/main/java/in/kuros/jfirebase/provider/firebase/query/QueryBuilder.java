@@ -1,21 +1,27 @@
 package in.kuros.jfirebase.provider.firebase.query;
 
+import in.kuros.jfirebase.metadata.AttributeValue;
+import in.kuros.jfirebase.metadata.UpdateAttribute;
+import in.kuros.jfirebase.provider.firebase.AttributeValueHelper;
 import in.kuros.jfirebase.provider.firebase.EntityHelper;
 import lombok.Getter;
+
+import java.util.Arrays;
 
 public final class QueryBuilder<T> extends QueryImpl<T> {
     @Getter private final String path;
     @Getter private Class<T> resultType;
+    private final AttributeValueHelper attributeValueHelper;
 
     @SuppressWarnings("unchecked")
     private QueryBuilder(final Class<T> type) {
-        path = getCollectionName(type);
-        resultType = type;
+        this(getCollectionName(type), type);
     }
 
     private QueryBuilder(final String path, final Class<T> resultType) {
         this.path = path;
         this.resultType = resultType;
+        this.attributeValueHelper = new AttributeValueHelper();
     }
 
     public static <S> QueryBuilder<S> collection(final Class<S> type) {
@@ -42,7 +48,18 @@ public final class QueryBuilder<T> extends QueryImpl<T> {
         return new QueryBuilder<>(path + pathValue, resultType);
     }
 
-    private String getCollectionName(final Class<?> type) {
+    public QueryBuilder<T> withKeys(AttributeValue<T, ?>... attributeValues) {
+        final T entity = attributeValueHelper.createEntity(Arrays.asList(attributeValues));
+        final String documentPath = EntityHelper.INSTANCE.getDocumentPath(entity);
+
+        return new QueryBuilder<>(documentPath, resultType);
+    }
+
+    public <S> QueryBuilder<S> resultType(final Class<S> resultClass) {
+        return new QueryBuilder<>(path, resultClass);
+    }
+
+    private static String getCollectionName(final Class<?> type) {
         return EntityHelper.getMappedCollection(type);
     }
 }

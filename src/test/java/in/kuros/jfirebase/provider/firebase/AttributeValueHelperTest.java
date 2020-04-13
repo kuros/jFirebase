@@ -37,7 +37,7 @@ class AttributeValueHelperTest {
 
         final String id = RandomStringUtils.randomAlphanumeric(3);
         final String value = RandomStringUtils.randomAlphanumeric(5);
-        final TestClass testEntity = attributeValueHelper.createEntity(TestClass.class, AttributeValue
+        final TestClass testEntity = attributeValueHelper.createEntity(AttributeValue
                 .with(TestClass_.testId, id)
                 .with(TestClass_.testValue, value)
                 .build());
@@ -52,7 +52,7 @@ class AttributeValueHelperTest {
     void shouldThrowExceptionWhenCreateEntityForGivenAttributeValuesWithoutId() {
 
         final String value = RandomStringUtils.randomAlphanumeric(5);
-        assertThrows(PersistenceException.class, () -> attributeValueHelper.createEntity(TestClass.class, AttributeValue
+        assertThrows(PersistenceException.class, () -> attributeValueHelper.createEntity(AttributeValue
                 .with(TestClass_.testValue, value)
                 .build()));
     }

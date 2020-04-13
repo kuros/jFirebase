@@ -67,12 +67,11 @@ public class WriteBatchImpl implements WriteBatch {
             return;
         }
 
-        final Class<T> type = attributeValues.get(0).getAttribute().getDeclaringType();
-        final T entity = attributeValueHelper.createEntity(type, attributeValues);
+        final T entity = attributeValueHelper.createEntity(attributeValues);
         final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
 
         if (entityHelper.setUpdateTime(entity)) {
-            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
+            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
         }
 
         final DocumentReference documentReference = getDocumentReference(entity);
@@ -82,16 +81,15 @@ public class WriteBatchImpl implements WriteBatch {
 
     @Override
     public <T> void set(final SetAttribute<T> setAttribute) {
-        final Class<T> type = SetAttribute.Helper.getDeclaringClass(setAttribute);
         final List<AttributeValue<T, ?>> updateAttributes = SetAttribute.Helper.getAttributeValues(setAttribute);
         final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
         attributeValues.addAll(updateAttributes);
-        final T entity = attributeValueHelper.createEntity(type, attributeValues);
+        final T entity = attributeValueHelper.createEntity(attributeValues);
 
         final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateAttributes);
 
         if (entityHelper.setUpdateTime(entity)) {
-            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
+            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
         }
 
         final DocumentReference documentReference = getDocumentReference(entity);
@@ -101,8 +99,7 @@ public class WriteBatchImpl implements WriteBatch {
     @Override
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
-        final Class<T> type = RemoveAttribute.Helper.getDeclaringClass(removeAttribute);
-        final T entity = attributeValueHelper.createEntity(type, RemoveAttribute.Helper.getKeys(removeAttribute));
+        final T entity = attributeValueHelper.createEntity(RemoveAttribute.Helper.getKeys(removeAttribute));
         final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
         final DocumentReference documentReference = getDocumentReference(entity);
         updateBuilder.update(documentReference, valueMap);
@@ -112,8 +109,7 @@ public class WriteBatchImpl implements WriteBatch {
     @Override
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
-        final Class<T> type = UpdateAttribute.Helper.getDeclaringClass(updateAttribute);
-        final T entity = attributeValueHelper.createEntity(type, UpdateAttribute.Helper.getKeys(updateAttribute));
+        final T entity = attributeValueHelper.createEntity(UpdateAttribute.Helper.getKeys(updateAttribute));
         final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
         valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
         final DocumentReference documentReference = getDocumentReference(entity);

@@ -4,7 +4,6 @@ import com.google.cloud.firestore.FieldPath;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
-import in.kuros.jfirebase.metadata.ValuePath;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -21,9 +20,9 @@ public class AttributeValueHelper {
         entityHelper = EntityHelper.INSTANCE;
     }
 
-    public <T> T createEntity(final Class<T> type, final List<AttributeValue<T, ?>> attributeValues) {
+    public <T> T createEntity(final List<AttributeValue<T, ?>> attributeValues) {
         try {
-            final Constructor<T> constructor = type.getConstructor();
+            final Constructor<T> constructor = getDeclaringClass(attributeValues).getConstructor();
             constructor.setAccessible(true);
             final T entity = constructor.newInstance();
             populateValues(entity, attributeValues);
@@ -109,4 +108,11 @@ public class AttributeValueHelper {
         return FieldPath.of(attributeValue.getAttribute().getName());
     }
 
+    private <T> Class<T> getDeclaringClass(final List<AttributeValue<T, ?>> attributeValues) {
+        if (attributeValues.size() == 0) {
+            throw new IllegalStateException("No Keys provided");
+        }
+
+        return attributeValues.get(0).getAttribute().getDeclaringType();
+    }
 }

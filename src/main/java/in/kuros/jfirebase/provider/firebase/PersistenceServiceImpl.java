@@ -26,6 +26,7 @@ import in.kuros.jfirebase.transaction.WriteBatch;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -95,34 +96,8 @@ class PersistenceServiceImpl implements PersistenceService {
         }
     }
 
-
-    @Override
-    public <T> void set(final List<AttributeValue<T, ?>> attributeValues) {
-        if (attributeValues.isEmpty()) {
-            return;
-        }
-
-        final Class<T> type = attributeValues.get(0).getAttribute().getDeclaringType();
-
-        try {
-            final T entity = attributeValueHelper.createEntity(type, attributeValues);
-
-            final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
-
-            if (entityHelper.setUpdateTime(entity)) {
-                fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
-            }
-
-            final DocumentReference documentReference = getDocumentReference(entity);
-            documentReference.set(entity, SetOptions.mergeFieldPaths(fieldPaths)).get();
-        } catch (final Exception e) {
-            throw new PersistenceException(e);
-        }
-    }
-
     @Override
     public <T> void set(final SetAttribute<T> setAttribute) {
-        final Class<T> type = SetAttribute.Helper.getDeclaringClass(setAttribute);
         try {
             final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
             final List<AttributeValue<T, ?>> updateValues = SetAttribute.Helper.getAttributeValues(setAttribute);
@@ -130,12 +105,12 @@ class PersistenceServiceImpl implements PersistenceService {
             attributeValues.addAll(updateValues);
 
 
-            final T entity = attributeValueHelper.createEntity(type, attributeValues);
+            final T entity = attributeValueHelper.createEntity(attributeValues);
 
             final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateValues);
 
             if (entityHelper.setUpdateTime(entity)) {
-                fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(type).getName()));
+                fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
             }
 
             final DocumentReference documentReference = getDocumentReference(entity);
@@ -149,9 +124,8 @@ class PersistenceServiceImpl implements PersistenceService {
     @Override
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
-        final Class<T> type = RemoveAttribute.Helper.getDeclaringClass(removeAttribute);
         try {
-            final T entity = attributeValueHelper.createEntity(type, RemoveAttribute.Helper.getKeys(removeAttribute));
+            final T entity = attributeValueHelper.createEntity(RemoveAttribute.Helper.getKeys(removeAttribute));
 
             final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
 
@@ -163,9 +137,8 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
-        final Class<T> type = UpdateAttribute.Helper.getDeclaringClass(updateAttribute);
         try {
-            final T entity = attributeValueHelper.createEntity(type, UpdateAttribute.Helper.getKeys(updateAttribute));
+            final T entity = attributeValueHelper.createEntity(UpdateAttribute.Helper.getKeys(updateAttribute));
 
             final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
             valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
@@ -225,16 +198,17 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
-    public <T> T findById(final Query<T> query) {
+    public <T> Optional<T> findById(final Query<T> query) {
         try {
             final QueryBuilder<T> queryBuilder = (QueryBuilder<T>) query;
             final DocumentReference document = firestore.document(queryBuilder.getPath());
             final DocumentSnapshot documentSnapshot = document.get().get();
             final T object = documentSnapshot.toObject(queryBuilder.getResultType());
-            if (object != null) {
-                entityHelper.setId(object, documentSnapshot.getId());
-            }
-            return object;
+            return Optional.ofNullable(object)
+                    .map(e -> {
+                        entityHelper.setId(e, documentSnapshot.getId());
+                        return e;
+                    });
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }

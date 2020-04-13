@@ -11,6 +11,7 @@ import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -22,8 +23,6 @@ public interface PersistenceService {
     <T> void set(T... entities);
 
     <T> void set(T entity, Attribute<T, ?> attribute);
-
-    <T> void set(List<AttributeValue<T, ?>> attributeValues);
 
     <T> void set(SetAttribute<T> setAttribute);
 
@@ -37,7 +36,7 @@ public interface PersistenceService {
 
     <T> List<T> find(Query<T> queryBuilder);
 
-    <T> T findById(Query<T> queryBuilder);
+    <T> Optional<T> findById(Query<T> queryBuilder);
 
     <T> T runTransaction(Function<Transaction, T> transactionConsumer);
 
