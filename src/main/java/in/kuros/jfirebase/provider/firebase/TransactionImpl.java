@@ -1,11 +1,15 @@
 package in.kuros.jfirebase.provider.firebase;
 
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import in.kuros.jfirebase.exception.PersistenceException;
+import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.transaction.Transaction;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TransactionImpl extends WriteBatchImpl implements Transaction {
@@ -36,6 +40,23 @@ public class TransactionImpl extends WriteBatchImpl implements Transaction {
                         return object;
                     })
                     .collect(Collectors.toList());
+        } catch (final Exception e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    @Override
+    public <T> Optional<T> findById(final in.kuros.jfirebase.query.Query<T> query) {
+        try {
+            final QueryBuilder<T> queryBuilder = (QueryBuilder<T>) query;
+            final DocumentReference document = firestore.document(queryBuilder.getPath());
+            final DocumentSnapshot documentSnapshot = transaction.get(document).get();
+            final T object = documentSnapshot.toObject(queryBuilder.getResultType());
+            return Optional.ofNullable(object)
+                    .map(e -> {
+                        entityHelper.setId(e, documentSnapshot.getId());
+                        return e;
+                    });
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
