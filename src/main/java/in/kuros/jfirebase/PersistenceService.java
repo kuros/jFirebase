@@ -41,4 +41,6 @@ public interface PersistenceService {
     <T> T runTransaction(Function<Transaction, T> transactionConsumer);
 
     void writeInBatch(Consumer<WriteBatch> batchConsumer);
+
+    static void init(){}
 }
