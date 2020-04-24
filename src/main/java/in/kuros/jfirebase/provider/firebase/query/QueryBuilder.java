@@ -1,5 +1,7 @@
 package in.kuros.jfirebase.provider.firebase.query;
 
+import com.google.common.collect.Lists;
+import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.provider.firebase.AttributeValueHelper;
@@ -7,6 +9,8 @@ import in.kuros.jfirebase.provider.firebase.EntityHelper;
 import lombok.Getter;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 public final class QueryBuilder<T> extends QueryImpl<T> {
     @Getter private final String path;
@@ -48,11 +52,20 @@ public final class QueryBuilder<T> extends QueryImpl<T> {
         return new QueryBuilder<>(path + pathValue, resultType);
     }
 
-    public QueryBuilder<T> withKeys(AttributeValue<T, ?>... attributeValues) {
-        final T entity = attributeValueHelper.createEntity(Arrays.asList(attributeValues));
+    @SuppressWarnings("unchecked")
+    public static <T, V> QueryBuilder<T> withKey(Attribute<T, V> attribute, V value) {
+        return withKeys(Lists.newArrayList(AttributeValue.of(attribute, value)));
+    }
+
+    public static <T> QueryBuilder<T> withKeys(List<AttributeValue<T, ?>> attributeValues) {
+        if (Objects.isNull(attributeValues) || attributeValues.size() == 0 ) {
+            throw new IllegalArgumentException("key Attriutes are required");
+        }
+        final AttributeValueHelper attributeValueHelper = new AttributeValueHelper();
+        final T entity = attributeValueHelper.createEntity(attributeValues);
         final String documentPath = EntityHelper.INSTANCE.getDocumentPath(entity);
 
-        return new QueryBuilder<>(documentPath, resultType);
+        return new QueryBuilder<>(documentPath, attributeValues.get(0).getAttribute().getDeclaringType());
     }
 
     public <S> QueryBuilder<S> resultType(final Class<S> resultClass) {
