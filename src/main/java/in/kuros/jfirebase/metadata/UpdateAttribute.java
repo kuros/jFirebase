@@ -37,6 +37,11 @@ public final class UpdateAttribute<T> {
         return this;
     }
 
+    public <V> UpdateAttribute<T> update(final AttributeValue<T, V> attributeValue) {
+        attributesToUpdate.add(attributeValue);
+        return this;
+    }
+
     public <V> UpdateAttribute<T> updateFieldValue(final Attribute<T, ?> attribute, final Supplier<V> valueSupplier) {
         attributesToUpdate.add(AttributeValueImpl.of(attribute, Value.of(valueSupplier.get())));
         return this;

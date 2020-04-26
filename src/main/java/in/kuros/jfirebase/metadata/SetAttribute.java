@@ -30,6 +30,11 @@ public final class SetAttribute<T> {
         return this;
     }
 
+    public <V> SetAttribute<T> set(final AttributeValue<T, V> attributeValue) {
+        attributesToUpdate.add(attributeValue);
+        return this;
+    }
+
     public <K, V> SetAttribute<T> set(final MapAttribute<T, K, V> mapAttribute, final K key, final V value) {
         attributesToUpdate.add(MapAttributeValue.of(mapAttribute, key, value));
         return this;
