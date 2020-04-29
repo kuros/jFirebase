@@ -1,6 +1,7 @@
 package in.kuros.jfirebase.metadata;
 
 import com.google.common.collect.Lists;
+import in.kuros.jfirebase.util.CustomCollectors;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,7 +86,7 @@ public final class UpdateAttribute<T> {
 
         static <T> Map<String, ?> getValuePaths(UpdateAttribute<T> updateAttribute) {
             return updateAttribute.valuePaths.stream()
-                    .collect(Collectors.toMap(vp -> vp.getPath()[0], ValuePath::getValue));
+                    .collect(CustomCollectors.toMap(vp -> vp.getPath()[0], ValuePath::getValue));
         }
 
         static <T> Class<T> getDeclaringClass(UpdateAttribute<T> updateAttribute) {
