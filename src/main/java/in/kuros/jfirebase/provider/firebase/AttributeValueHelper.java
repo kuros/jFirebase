@@ -4,6 +4,7 @@ import com.google.cloud.firestore.FieldPath;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
+import in.kuros.jfirebase.util.CustomCollectors;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -36,7 +37,7 @@ public class AttributeValueHelper {
     public <T> Map<String, Object> toFieldValueMap(final List<AttributeValue<T, ?>> attributeValues) {
         return attributeValues
                 .stream()
-                .collect(Collectors.toMap(
+                .collect(CustomCollectors.toMap(
                         attributeValue -> {
                             if (MapAttributeValue.class.isAssignableFrom(attributeValue.getClass())) {
                                 final MapAttributeValue mapAttributeValue = (MapAttributeValue) attributeValue;

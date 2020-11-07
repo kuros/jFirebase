@@ -3,6 +3,7 @@ package in.kuros.jfirebase.entity;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import in.kuros.jfirebase.metadata.MetadataException;
+import in.kuros.jfirebase.util.CustomCollectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -49,7 +50,7 @@ public final class EntityParentCache {
         final List<Field> allParentFields = getAllParentFields(type);
         final Map<? extends Class<?>, Field> mappedClassToFieldMap = allParentFields.
                 stream()
-                .collect(Collectors.toMap(this::getMappedClass, Function.identity()));
+                .collect(CustomCollectors.toMap(this::getMappedClass, Function.identity()));
 
         final List<MappedClassField> result = new ArrayList<>();
         for (Class<?> parentClass : getParents(type)) {

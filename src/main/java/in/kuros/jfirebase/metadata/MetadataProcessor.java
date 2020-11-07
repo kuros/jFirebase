@@ -2,6 +2,7 @@ package in.kuros.jfirebase.metadata;
 
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.reflection.MetadataScanner;
+import in.kuros.jfirebase.util.CustomCollectors;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Field;
@@ -9,7 +10,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public final class MetadataProcessor {
 
@@ -39,7 +39,7 @@ public final class MetadataProcessor {
 
                 final Class<?> referencedClass = metadata.value();
                 final Map<String, Field> allFields = Arrays.stream(referencedClass.getDeclaredFields())
-                        .collect(Collectors.toMap(Field::getName, Function.identity()));
+                        .collect(CustomCollectors.toMap(Field::getName, Function.identity()));
 
                 final Field[] fields = type.getDeclaredFields();
                 for (Field field : fields) {
