@@ -149,8 +149,8 @@ class PersistenceServiceImpl implements PersistenceService {
 
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         try {
-            final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
-            valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
+            final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
+            attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
 
             final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
             final DocumentReference documentReference = firestore.document(documentPath);

@@ -93,7 +93,7 @@ public class WriteBatchImpl implements WriteBatch {
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
         final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
-        valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
+        attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
 
         final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
         final DocumentReference documentReference = firestore.document(documentPath);
