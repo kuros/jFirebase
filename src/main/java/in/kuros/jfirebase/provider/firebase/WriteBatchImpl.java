@@ -92,7 +92,7 @@ public class WriteBatchImpl implements WriteBatch {
     @Override
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
-        final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
+        final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
         attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
 
         final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));

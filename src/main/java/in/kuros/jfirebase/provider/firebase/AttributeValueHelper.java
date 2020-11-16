@@ -7,7 +7,6 @@ import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
 import in.kuros.jfirebase.metadata.ValuePath;
-import in.kuros.jfirebase.util.CustomCollectors;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -37,31 +36,6 @@ public class AttributeValueHelper {
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
-    }
-
-    public <T> Map<String, Object> toFieldValueMap(final List<AttributeValue<T, ?>> attributeValues) {
-        return attributeValues
-                .stream()
-                .collect(CustomCollectors.toMap(
-                        attributeValue -> {
-                            if (MapAttributeValue.class.isAssignableFrom(attributeValue.getClass())) {
-                                final MapAttributeValue mapAttributeValue = (MapAttributeValue) attributeValue;
-                                if (mapAttributeValue.isKeyUpdate()) {
-                                    return mapAttributeValue.getAttribute().getName() + "." + mapAttributeValue.getKey();
-                                }
-                            }
-                            return attributeValue.getAttribute().getName();
-                        },
-
-                        attributeValue -> {
-                            if (MapAttributeValue.class.isAssignableFrom(attributeValue.getClass())) {
-                                final MapAttributeValue mapAttributeValue = (MapAttributeValue) attributeValue;
-                                if (mapAttributeValue.isKeyUpdate()) {
-                                    return mapAttributeValue.getMapValue().getValue();
-                                }
-                            }
-                            return attributeValue.getAttributeValue().getValue();
-                        }));
     }
 
     public <T> List<FieldPath> getFieldPaths(final List<AttributeValue<T, ?>> attributeValues) {

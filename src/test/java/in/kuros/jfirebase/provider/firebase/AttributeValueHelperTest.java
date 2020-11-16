@@ -61,41 +61,6 @@ class AttributeValueHelperTest {
     }
 
     @Test
-    void shouldConvertToFieldValueMap() {
-        final String id = RandomStringUtils.randomAlphanumeric(3);
-        final String value = RandomStringUtils.randomAlphanumeric(5);
-        final String mapKey = RandomStringUtils.randomAlphanumeric(4);
-        final String mapValue = RandomStringUtils.randomAlphanumeric(4);
-        final List<AttributeValue<TestClass, ?>> attributeValues = AttributeValue
-                .with(TestClass_.testId, id)
-                .with(TestClass_.testValue, value)
-                .with(TestClass_.testMap, mapKey, mapValue)
-                .build();
-
-        final Map<String, Object> resultMap = attributeValueHelper.toFieldValueMap(attributeValues);
-
-        assertEquals(3, resultMap.size());
-        assertEquals(id,  resultMap.get("testId"));
-        assertEquals(value,  resultMap.get("testValue"));
-        assertEquals(mapValue,  resultMap.get("testMap." + mapKey));
-    }
-
-    @Test
-    void shouldConvertToFieldValueMapWithCompleteMapPath() {
-        final Map<String, String> map = new HashMap<>();
-        map.put(RandomStringUtils.randomAlphanumeric(4), RandomStringUtils.randomAlphanumeric(4));
-
-        final List<AttributeValue<TestClass, ?>> attributeValues = AttributeValue
-                .with(TestClass_.testMap, map)
-                .build();
-
-        final Map<String, Object> resultMap = attributeValueHelper.toFieldValueMap(attributeValues);
-
-        assertEquals(1, resultMap.size());
-        assertEquals(map,  resultMap.get("testMap"));
-    }
-
-    @Test
     void shouldCreateFieldPathForAttributeValues() {
         final String id = RandomStringUtils.randomAlphanumeric(3);
         final String value = RandomStringUtils.randomAlphanumeric(5);
