@@ -7,17 +7,17 @@ import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.SetOptions;
 import com.google.cloud.firestore.UpdateBuilder;
-import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
+import in.kuros.jfirebase.metadata.SetAttribute.Helper;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 public class WriteBatchImpl implements WriteBatch {
 
@@ -51,68 +51,41 @@ public class WriteBatchImpl implements WriteBatch {
     }
 
     @Override
-    public <T> void set(final T entity, final Attribute<T, ?>... attributes) {
-        final List<String> fields = Arrays.stream(attributes).map(Attribute::getName).collect(Collectors.toList());
-        if (entityHelper.setUpdateTime(entity)) {
-            final String updateField = entityHelper.getUpdateTimeField(entity.getClass()).getName();
-            fields.add(updateField);
-        }
-        final DocumentReference documentReference = getDocumentReference(entity);
-        updateBuilder.set(documentReference, entity, SetOptions.mergeFields(fields));
-    }
+    public <T> void set(final SetAttribute<T> setAttribute) {
+        final Class<T> declaringClass = Helper.getDeclaringClass(setAttribute);
+        final List<AttributeValue<T, ?>> keyAttributes = SetAttribute.Helper.getAttributeValues(setAttribute);
+        final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
 
-    @Override
-    public <T> void set(final List<AttributeValue<T, ?>> attributeValues) {
-        if (attributeValues.isEmpty()) {
-            return;
-        }
-
-        final T entity = attributeValueHelper.createEntity(attributeValues);
+        final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
         final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
 
-        if (entityHelper.setUpdateTime(entity)) {
-            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
-        }
+        final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(declaringClass);
+        updateTimeField.ifPresent(name -> {
+            valueMap.put(name, new Date());
+            fieldPaths.add(FieldPath.of(name));
+        });
 
-        final DocumentReference documentReference = getDocumentReference(entity);
-        updateBuilder.set(documentReference, entity, SetOptions.mergeFieldPaths(fieldPaths));
-
-    }
-
-    @Override
-    public <T> void set(final SetAttribute<T> setAttribute) {
-        final List<AttributeValue<T, ?>> updateAttributes = SetAttribute.Helper.getAttributeValues(setAttribute);
-        final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
-        attributeValues.addAll(updateAttributes);
-        final T entity = attributeValueHelper.createEntity(attributeValues);
-
-        final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateAttributes);
-
-        if (entityHelper.setUpdateTime(entity)) {
-            fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
-        }
-
-        final DocumentReference documentReference = getDocumentReference(entity);
-        updateBuilder.set(documentReference, entity, SetOptions.mergeFieldPaths(fieldPaths));
+        final DocumentReference documentReference = firestore.document(entityHelper.getDocumentPath(keyAttributes));
+        updateBuilder.set(documentReference, valueMap, SetOptions.mergeFieldPaths(fieldPaths));
     }
 
     @Override
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
-        final T entity = attributeValueHelper.createEntity(RemoveAttribute.Helper.getKeys(removeAttribute));
         final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
-        final DocumentReference documentReference = getDocumentReference(entity);
+        final String documentPath = entityHelper.getDocumentPath(RemoveAttribute.Helper.getKeys(removeAttribute));
+        final DocumentReference documentReference = firestore.document(documentPath);
         updateBuilder.update(documentReference, valueMap);
-
     }
 
     @Override
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
-        final T entity = attributeValueHelper.createEntity(UpdateAttribute.Helper.getKeys(updateAttribute));
         final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
         valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
-        final DocumentReference documentReference = getDocumentReference(entity);
+
+        final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
+        final DocumentReference documentReference = firestore.document(documentPath);
         updateBuilder.update(documentReference, valueMap);
     }
 

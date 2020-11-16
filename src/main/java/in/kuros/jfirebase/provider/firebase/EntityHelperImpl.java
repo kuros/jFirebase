@@ -14,15 +14,22 @@ import in.kuros.jfirebase.entity.Id;
 import in.kuros.jfirebase.entity.IdReference;
 import in.kuros.jfirebase.entity.UpdateTime;
 import in.kuros.jfirebase.exception.PersistenceException;
+import in.kuros.jfirebase.metadata.Attribute;
+import in.kuros.jfirebase.metadata.AttributeValue;
+import in.kuros.jfirebase.metadata.Value;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class EntityHelperImpl implements EntityHelper {
 
@@ -202,6 +209,11 @@ public class EntityHelperImpl implements EntityHelper {
     }
 
     @Override
+    public Optional<String> getUpdateTimeFieldName(final Class<?> type) {
+        return Optional.ofNullable(getUpdateTimeField(type)).map(Field::getName);
+    }
+
+    @Override
     public <T> void validateIdsNotNull(final T object) {
         try {
             final Class<?> type = object.getClass();
@@ -230,6 +242,58 @@ public class EntityHelperImpl implements EntityHelper {
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
+    }
+
+    @Override
+    public <T> String getDocumentPath(final List<AttributeValue<T, ?>> attributeValues) {
+        final Class<T> declaringClass = getDeclaringClass(attributeValues);
+        final Field idField = getIdField(declaringClass);
+        final String idValue = attributeValues.stream()
+                .filter(attr -> attr.getAttribute().getField().equals(idField))
+                .findFirst()
+                .map(AttributeValue::getAttributeValue)
+                .map(Value::getValue)
+                .map(Object::toString)
+                .orElseThrow(() -> new IllegalArgumentException("Id value not set"));
+
+        return getCollectionPath(attributeValues) + "/" + idValue;
+    }
+
+    @Override
+    public <T> String getCollectionPath(final List<AttributeValue<T, ?>> attributeValues) {
+        final Class<T> declaringClass = getDeclaringClass(attributeValues);
+        final Entity entity = EntityHelper.getEntity(declaringClass);
+
+        return getParentPath(attributeValues) + entity.value();
+    }
+
+    private <T> String getParentPath(final List<AttributeValue<T, ?>> attributeValues) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        final Class<T> declaringClass = getDeclaringClass(attributeValues);
+
+        final Map<String, AttributeValue<T, ?>> valueMap = attributeValues.stream()
+                .collect(Collectors.toMap(attr -> attr.getAttribute().getName(), Function.identity()));
+
+        final List<MappedClassField> mappedClassFields = EntityParentCache.INSTANCE.getMappedClassFields(declaringClass);
+
+        for (MappedClassField mappedClassField : mappedClassFields) {
+
+            final String parentId = valueMap.get(mappedClassField.getField().getName()).getAttributeValue().getValue().toString();
+            if (parentId == null) {
+                throw new EntityDeclarationException("parent id cannot be null: " + mappedClassField.getField());
+            }
+
+            stringBuilder.append(getParentCollection(mappedClassField))
+                    .append("/")
+                    .append(parentId)
+                    .append("/");
+        }
+
+        return stringBuilder.toString();
+    }
+
+    private <T> Class<T> getDeclaringClass(final List<AttributeValue<T, ?>> attributeValues) {
+        return attributeValues.stream().findFirst().map(AttributeValue::getAttribute).map(Attribute::getDeclaringType).orElseThrow(() -> new IllegalArgumentException("Keys not set"));
     }
 
     private List<Field> getIdReferenceFields(final Class<?> type) throws ExecutionException {

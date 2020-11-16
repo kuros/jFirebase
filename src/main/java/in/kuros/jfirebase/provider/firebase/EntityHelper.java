@@ -2,15 +2,22 @@ package in.kuros.jfirebase.provider.firebase;
 
 import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
+import in.kuros.jfirebase.metadata.AttributeValue;
 
 import java.lang.reflect.Field;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface EntityHelper {
 
     <T> String getDocumentPath(T entity);
 
+    <T> String getDocumentPath(List<AttributeValue<T, ?>> attributeValues);
+
     <T> String getCollectionPath(T entity);
+
+    <T> String getCollectionPath(List<AttributeValue<T, ?>> attributeValues);
 
     <T> void setId(T entity, String id);
 
@@ -21,6 +28,8 @@ public interface EntityHelper {
     <T> boolean setUpdateTime(T entity);
 
     Field getUpdateTimeField(Class<?> type);
+
+    Optional<String> getUpdateTimeFieldName(Class<?> type);
 
     <T> Set<Field> getAllRequiredIdFields(Class<T> type);
 

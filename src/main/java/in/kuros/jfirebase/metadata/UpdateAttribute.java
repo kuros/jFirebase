@@ -1,14 +1,11 @@
 package in.kuros.jfirebase.metadata;
 
-import com.google.common.collect.Lists;
 import in.kuros.jfirebase.util.CustomCollectors;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 
 public final class UpdateAttribute<T> {
@@ -64,12 +61,8 @@ public final class UpdateAttribute<T> {
     }
 
 
-    public <V> UpdateAttribute<T> update(final Attribute<T, ?> attribute, final ValuePath<V> valuePath) {
-        final List<String> path = Lists.newArrayList(attribute.getName());
-        path.addAll(Arrays.asList(valuePath.getPath()));
-
-        final String joinedPath = String.join(".", path);
-        valuePaths.add(new ValuePath<>(valuePath.getValue(), joinedPath));
+    public <V> UpdateAttribute<T> update(final ValuePath<V> valuePath) {
+        valuePaths.add(valuePath);
         return this;
     }
 
@@ -87,14 +80,6 @@ public final class UpdateAttribute<T> {
         static <T> Map<String, ?> getValuePaths(UpdateAttribute<T> updateAttribute) {
             return updateAttribute.valuePaths.stream()
                     .collect(CustomCollectors.toMap(vp -> vp.getPath()[0], ValuePath::getValue));
-        }
-
-        static <T> Class<T> getDeclaringClass(UpdateAttribute<T> updateAttribute) {
-            if (updateAttribute.keys.isEmpty()) {
-                throw new IllegalStateException("No Keys provided");
-            }
-
-            return updateAttribute.keys.get(0).getAttribute().getDeclaringType();
         }
     }
 }

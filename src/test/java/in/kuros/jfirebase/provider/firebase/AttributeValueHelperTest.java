@@ -1,5 +1,7 @@
 package in.kuros.jfirebase.provider.firebase;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.firestore.FieldPath;
 import com.google.common.collect.Lists;
 import in.kuros.jfirebase.entity.TestClass;
@@ -7,6 +9,7 @@ import in.kuros.jfirebase.entity.TestClass_;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MetadataProcessor;
+import in.kuros.jfirebase.metadata.ValuePath;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,5 +111,24 @@ class AttributeValueHelperTest {
 
         final ArrayList<FieldPath> expected = Lists.newArrayList(FieldPath.of("testId"), FieldPath.of("testValue"), FieldPath.of("testMap", mapKey));
         assertIterableEquals(expected, fieldPaths);
+    }
+
+    @Test
+    void shouldAddValuePathsToMap() throws JsonProcessingException {
+        final Map<String, Object> map = new HashMap<>();
+        map.put("xyz", "lkasd");
+
+        attributeValueHelper.addValuePaths(map, Lists.newArrayList(ValuePath.of(1, "a", "b", "c"), ValuePath.of(1, "a", "x", "d")));
+
+        assertEquals("{\"a\":{\"b\":{\"c\":1},\"x\":{\"d\":1}},\"xyz\":\"lkasd\"}", new ObjectMapper().writeValueAsString(map));
+    }
+
+    @Test
+    void name() {
+        final Map<String, Object> map = new HashMap<>();
+        map.put("xyz", new TestClass());
+
+        final Map map1 = new ObjectMapper().convertValue(map, Map.class);
+        System.out.println(map1);
     }
 }

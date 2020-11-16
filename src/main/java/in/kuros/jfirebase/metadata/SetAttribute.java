@@ -9,11 +9,13 @@ public final class SetAttribute<T> {
 
     private final List<AttributeValue<T, ?>> keys;
     private final List<AttributeValue<T, ?>> attributesToUpdate;
+    private final List<ValuePath<?>> valuePaths;
 
     private SetAttribute(final AttributeValue<T, ?> key) {
         keys = new ArrayList<>();
         keys.add(key);
         attributesToUpdate = new ArrayList<>();
+        valuePaths = new ArrayList<>();
     }
 
     public static <T, K, V> SetAttribute<T> withKeys(final Attribute<T, V> attribute, final V value) {
@@ -45,6 +47,11 @@ public final class SetAttribute<T> {
         return this;
     }
 
+    public SetAttribute<T> set(final ValuePath valuePath) {
+        valuePaths.add(valuePath);
+        return this;
+    }
+
 
     public interface Helper {
         static <T> List<AttributeValue<T, ?>> getKeys(SetAttribute<T> updateAttribute) {
@@ -54,6 +61,10 @@ public final class SetAttribute<T> {
         static <T> List<AttributeValue<T, ?>> getAttributeValues(SetAttribute<T> updateAttribute) {
             return updateAttribute
                     .attributesToUpdate;
+        }
+
+        static <T> List<ValuePath<?>> getValuePaths(SetAttribute<T> setAttribute) {
+            return setAttribute.valuePaths;
         }
 
         static <T> Class<T> getDeclaringClass(SetAttribute<T> updateAttribute) {

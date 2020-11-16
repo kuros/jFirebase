@@ -18,12 +18,15 @@ import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
+import in.kuros.jfirebase.metadata.SetAttribute.Helper;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
+import in.kuros.jfirebase.metadata.ValuePath;
 import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -99,22 +102,27 @@ class PersistenceServiceImpl implements PersistenceService {
     @Override
     public <T> void set(final SetAttribute<T> setAttribute) {
         try {
-            final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
+            final Class<T> declaringClass = Helper.getDeclaringClass(setAttribute);
+            final List<AttributeValue<T, ?>> keyAttributes = SetAttribute.Helper.getKeys(setAttribute);
             final List<AttributeValue<T, ?>> updateValues = SetAttribute.Helper.getAttributeValues(setAttribute);
+            final List<ValuePath<?>> valuePaths = SetAttribute.Helper.getValuePaths(setAttribute);
 
-            attributeValues.addAll(updateValues);
-
-
-            final T entity = attributeValueHelper.createEntity(attributeValues);
-
+            final Map<String, Object> updateMap = attributeValueHelper.convertToObjectMap(updateValues);
             final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(updateValues);
 
-            if (entityHelper.setUpdateTime(entity)) {
-                fieldPaths.add(FieldPath.of(entityHelper.getUpdateTimeField(entity.getClass()).getName()));
-            }
+            attributeValueHelper.addValuePaths(updateMap, valuePaths);
+            final List<FieldPath> valueFieldPaths = attributeValueHelper.convertValuePathToFieldPaths(valuePaths);
+            fieldPaths.addAll(valueFieldPaths);
 
-            final DocumentReference documentReference = getDocumentReference(entity);
-            documentReference.set(entity, SetOptions.mergeFieldPaths(fieldPaths)).get();
+            final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(declaringClass);
+            updateTimeField.ifPresent(name -> {
+                updateMap.put(name, new Date());
+                fieldPaths.add(FieldPath.of(name));
+            });
+
+            final String documentPath = entityHelper.getDocumentPath(keyAttributes);
+            final DocumentReference documentReference = firestore.document(documentPath);
+            documentReference.set(updateMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
 
         } catch (final Exception e) {
             throw new PersistenceException(e);
@@ -125,11 +133,10 @@ class PersistenceServiceImpl implements PersistenceService {
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
         try {
-            final T entity = attributeValueHelper.createEntity(RemoveAttribute.Helper.getKeys(removeAttribute));
-
             final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
 
-            final DocumentReference documentReference = getDocumentReference(entity);
+            final String documentPath = entityHelper.getDocumentPath(RemoveAttribute.Helper.getKeys(removeAttribute));
+            final DocumentReference documentReference = firestore.document(documentPath);
             documentReference.update(valueMap).get();
         } catch (final Exception e) {
             throw new PersistenceException(e);
@@ -138,12 +145,11 @@ class PersistenceServiceImpl implements PersistenceService {
 
     public <T> void update(final UpdateAttribute<T> updateAttribute) {
         try {
-            final T entity = attributeValueHelper.createEntity(UpdateAttribute.Helper.getKeys(updateAttribute));
-
             final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
             valueMap.putAll(UpdateAttribute.Helper.getValuePaths(updateAttribute));
 
-            final DocumentReference documentReference = getDocumentReference(entity);
+            final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
+            final DocumentReference documentReference = firestore.document(documentPath);
             documentReference.update(valueMap).get();
         } catch (final Exception e) {
             throw new PersistenceException(e);

@@ -1,22 +1,14 @@
 package in.kuros.jfirebase.transaction;
 
-import in.kuros.jfirebase.metadata.Attribute;
-import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
-
-import java.util.List;
 
 public interface WriteBatch {
 
     <T> void create(T entity);
 
     <T> void set(T entity);
-
-    <T> void set(T entity, Attribute<T, ?>... attributes);
-
-    <T> void set(List<AttributeValue<T, ?>> attributeValues);
 
     <T> void set(SetAttribute<T> setAttribute);
 
