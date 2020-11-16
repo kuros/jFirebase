@@ -131,13 +131,17 @@ class PersistenceServiceImpl implements PersistenceService {
 
     @Override
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
-        final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
         try {
-            final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
-
+            final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
+            final List<ValuePath<?>> valuePaths = RemoveAttribute.Helper.getValuePaths(removeAttribute);
+            final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
+            final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
+            attributeValueHelper.addValuePaths(valueMap, valuePaths);
+            final List<FieldPath> valueFieldPaths = attributeValueHelper.convertValuePathToFieldPaths(valuePaths);
+            fieldPaths.addAll(valueFieldPaths);
             final String documentPath = entityHelper.getDocumentPath(RemoveAttribute.Helper.getKeys(removeAttribute));
             final DocumentReference documentReference = firestore.document(documentPath);
-            documentReference.update(valueMap).get();
+            documentReference.set(valueMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }

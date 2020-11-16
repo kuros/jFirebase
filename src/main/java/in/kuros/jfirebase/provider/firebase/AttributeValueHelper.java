@@ -2,6 +2,7 @@ package in.kuros.jfirebase.provider.firebase;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.firestore.FieldPath;
+import com.google.cloud.firestore.FieldValue;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
@@ -145,7 +146,7 @@ public class AttributeValueHelper {
     }
 
     private Object parseValue(final Object value) {
-        if (value instanceof Number || value instanceof String || value instanceof List) {
+        if (value instanceof Number || value instanceof String || value instanceof List || value instanceof FieldValue) {
             return value;
         }
 

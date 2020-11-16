@@ -12,6 +12,7 @@ import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute.Helper;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
+import in.kuros.jfirebase.metadata.ValuePath;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
 import java.util.Date;
@@ -53,11 +54,16 @@ public class WriteBatchImpl implements WriteBatch {
     @Override
     public <T> void set(final SetAttribute<T> setAttribute) {
         final Class<T> declaringClass = Helper.getDeclaringClass(setAttribute);
-        final List<AttributeValue<T, ?>> keyAttributes = SetAttribute.Helper.getAttributeValues(setAttribute);
-        final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getKeys(setAttribute);
+        final List<AttributeValue<T, ?>> keyAttributes = SetAttribute.Helper.getKeys(setAttribute);
+        final List<AttributeValue<T, ?>> attributeValues = SetAttribute.Helper.getAttributeValues(setAttribute);
+        final List<ValuePath<?>> valuePaths = SetAttribute.Helper.getValuePaths(setAttribute);
 
         final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
         final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
+
+        attributeValueHelper.addValuePaths(valueMap, valuePaths);
+        final List<FieldPath> valueFieldPaths = attributeValueHelper.convertValuePathToFieldPaths(valuePaths);
+        fieldPaths.addAll(valueFieldPaths);
 
         final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(declaringClass);
         updateTimeField.ifPresent(name -> {
@@ -72,10 +78,15 @@ public class WriteBatchImpl implements WriteBatch {
     @Override
     public <T> void remove(final RemoveAttribute<T> removeAttribute) {
         final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
-        final Map<String, Object> valueMap = attributeValueHelper.toFieldValueMap(attributeValues);
+        final List<ValuePath<?>> valuePaths = RemoveAttribute.Helper.getValuePaths(removeAttribute);
+        final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
+        final List<FieldPath> fieldPaths = attributeValueHelper.getFieldPaths(attributeValues);
+        attributeValueHelper.addValuePaths(valueMap, valuePaths);
+        final List<FieldPath> valueFieldPaths = attributeValueHelper.convertValuePathToFieldPaths(valuePaths);
+        fieldPaths.addAll(valueFieldPaths);
         final String documentPath = entityHelper.getDocumentPath(RemoveAttribute.Helper.getKeys(removeAttribute));
         final DocumentReference documentReference = firestore.document(documentPath);
-        updateBuilder.update(documentReference, valueMap);
+        updateBuilder.set(documentReference, valueMap, SetOptions.mergeFieldPaths(fieldPaths));
     }
 
     @Override
