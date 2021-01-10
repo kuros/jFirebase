@@ -1,49 +1,29 @@
 package in.kuros.jfirebase.provider.firebase;
 
 import com.google.common.base.Strings;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import in.kuros.jfirebase.entity.CreateTime;
 import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.entity.EntityParentCache;
 import in.kuros.jfirebase.entity.EntityParentCache.MappedClassField;
-import in.kuros.jfirebase.entity.Id;
 import in.kuros.jfirebase.entity.IdReference;
-import in.kuros.jfirebase.entity.UpdateTime;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.Value;
+import in.kuros.jfirebase.util.BeanMapper;
+import in.kuros.jfirebase.util.ClassMapper;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EntityHelperImpl implements EntityHelper {
-
-    private final Cache<Class<?>, Field> idFields;
-    private final Cache<Class<?>, Field> createdFields;
-    private final Cache<Class<?>, Field> updatedFields;
-    private final Cache<Class<?>, List<Field>> idReferences;
-
-    EntityHelperImpl() {
-        idFields = CacheBuilder.newBuilder().build();
-        createdFields = CacheBuilder.newBuilder().build();
-        updatedFields = CacheBuilder.newBuilder().build();
-        idReferences = CacheBuilder.newBuilder().build();
-    }
 
     @Override
     public <T> String getDocumentPath(final T entity) {
@@ -63,55 +43,50 @@ public class EntityHelperImpl implements EntityHelper {
         return getCollectionBuilder(entity).toString();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> void setId(final T entity, final String id) {
-        final Field idField = getIdField(entity.getClass());
-        idField.setAccessible(true);
 
-        try {
+        final Class<T> aClass = (Class<T>) entity.getClass();
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(aClass);
 
-            if (idField.getType().isEnum()) {
-                final Method valueOf = idField.getType().getMethod("valueOf", String.class);
-                final Object value = valueOf.invoke(null, id);
-                idField.set(entity, value);
-            } else {
-                idField.set(entity, id);
-            }
-        } catch (final IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            throw new EntityDeclarationException("unable to access field: " + idField.getName());
+        final Optional<String> idField = beanMapper.getId();
+        if (!idField.isPresent()) {
+            throw new EntityDeclarationException("unable to access id field: " + entity.getClass());
         }
+
+        beanMapper.setValue(entity, idField.get(), id);
     }
 
     @Override
-    public  <T> String getId(final T entity) {
-        return getValueInString(entity, getIdField(entity.getClass()));
+    @SuppressWarnings("unchecked")
+    public <T> String getId(final T entity) {
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        return beanMapper.getId()
+                .map(idField -> beanMapper.getValue(entity, idField))
+                .map(Object::toString)
+                .orElse(null);
+
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> void setCreateTime(final T entity) {
-        final Field createTimeField = getCreateTimeField(entity.getClass());
-        if (createTimeField != null) {
-            createTimeField.setAccessible(true);
-            try {
-                createTimeField.set(entity, new Date());
-            } catch (final IllegalAccessException e) {
-                throw new EntityDeclarationException("unable to access field: " + createTimeField.getName());
-            }
-        }
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        beanMapper.getCreateTime()
+                .ifPresent(property -> beanMapper.setValue(entity, property, new Date()));
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> boolean setUpdateTime(final T entity) {
-        final Field timeField = getUpdateTimeField(entity.getClass());
-        if (timeField != null) {
-            timeField.setAccessible(true);
-            try {
-                timeField.set(entity, new Date());
-                return true;
-            } catch (final IllegalAccessException e) {
-                throw new EntityDeclarationException("unable to access field: " + timeField.getName());
-            }
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        final Optional<String> updateTime = beanMapper.getUpdateTime();
+        if (updateTime.isPresent()) {
+            beanMapper.setValue(entity, updateTime.get(), new Date());
+            return true;
         }
+
         return false;
     }
 
@@ -130,7 +105,7 @@ public class EntityHelperImpl implements EntityHelper {
 
         for (MappedClassField mappedClassField : mappedClassFields) {
 
-            final String parentId = getValueInString(entity, mappedClassField.getField());
+            final String parentId = getValueInString(entity, mappedClassField);
             if (parentId == null) {
                 throw new EntityDeclarationException("parent id cannot be null: " + mappedClassField.getField());
             }
@@ -145,100 +120,42 @@ public class EntityHelperImpl implements EntityHelper {
     private String getParentCollection(final MappedClassField mappedClassField) {
         final String value;
         if (mappedClassField.getMappedClass() == IdReference.DEFAULT.class) {
-            final IdReference reference = mappedClassField.getField().getAnnotation(IdReference.class);
-            value = reference.collection();
+            value = mappedClassField.getCollection();
             if (Strings.isNullOrEmpty(value)) {
                 throw new EntityDeclarationException("Id Reference class/collection not provided: " + mappedClassField.getField());
             }
         } else {
-            final Entity parentEntity = EntityHelper.getEntity(mappedClassField.getMappedClass());
-            value = parentEntity.value();
+            final BeanMapper<?> beanMapper = ClassMapper.getBeanMapper(mappedClassField.getMappedClass());
+            value = beanMapper.getEntity().value();
         }
         return value;
     }
 
-    private Field getIdField(final Class<?> type) {
-        try {
-            return idFields.get(type, () -> {
-                final Field[] declaredFields = type.getDeclaredFields();
-                for (Field declaredField : declaredFields) {
-                    if (declaredField.getAnnotation(Id.class) != null) {
-                        return declaredField;
-                    }
-                }
-
-                throw new EntityDeclarationException("@Id not found: " + type);
-            });
-        } catch (final ExecutionException e) {
-            throw new EntityDeclarationException(e);
-        }
-    }
-
-    private Field getCreateTimeField(final Class<?> type) {
-        try {
-            return createdFields.get(type, () -> {
-                final Field[] declaredFields = type.getDeclaredFields();
-                for (Field declaredField : declaredFields) {
-                    if (declaredField.getAnnotation(CreateTime.class) != null) {
-                        return declaredField;
-                    }
-                }
-
-                throw new SkipException();
-            });
-        } catch (final Exception e) {
-            return null;
-        }
-    }
-
-    public Field getUpdateTimeField(final Class<?> type) {
-        try {
-            return updatedFields.get(type, () -> {
-                final Field[] declaredFields = type.getDeclaredFields();
-                for (Field declaredField : declaredFields) {
-                    if (declaredField.getAnnotation(UpdateTime.class) != null) {
-                        return declaredField;
-                    }
-                }
-
-                throw new SkipException();
-            });
-        } catch (final Exception e) {
-            return null;
-        }
-    }
-
     @Override
     public Optional<String> getUpdateTimeFieldName(final Class<?> type) {
-        return Optional.ofNullable(getUpdateTimeField(type)).map(Field::getName);
+        return ClassMapper.getBeanMapper(type).getUpdateTime();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> void validateIdsNotNull(final T object) {
         try {
-            final Class<?> type = object.getClass();
-
-            final Set<Field> requiredIdFields = getAllRequiredIdFields(type);
-
-            requiredIdFields.forEach(field -> {
-                field.setAccessible(true);
-                try {
-                    Objects.requireNonNull(field.get(object), "Id/IdReferences are required: " + field);
-                } catch (final IllegalAccessException e) {
-                    throw new PersistenceException(e);
-                }
-            });
+            final Class<T> type = (Class<T>) object.getClass();
+            final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(type);
+            final Set<String> requiredIdFields = getAllRequiredIdFields(type);
+            requiredIdFields.forEach(field -> Objects.requireNonNull(beanMapper.getValue(object, field), "Id/IdReferences are required: " + field));
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
     }
 
     @Override
-    public <T> Set<Field> getAllRequiredIdFields(final Class<T> type) {
+    public <T> Set<String> getAllRequiredIdFields(final Class<T> type) {
         try {
-            final Set<Field> fields = Sets.newHashSet(getIdReferenceFields(type));
-            fields.add(getIdField(type));
-            return fields;
+            final BeanMapper<?> beanMapper = ClassMapper.getBeanMapper(type);
+            final Set<String> properties = Sets.newHashSet(beanMapper.getIdReferences().keySet());
+            beanMapper.getId().ifPresent(properties::add);
+            return properties;
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
@@ -247,9 +164,14 @@ public class EntityHelperImpl implements EntityHelper {
     @Override
     public <T> String getDocumentPath(final List<AttributeValue<T, ?>> attributeValues) {
         final Class<T> declaringClass = getDeclaringClass(attributeValues);
-        final Field idField = getIdField(declaringClass);
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(declaringClass);
+        final Optional<String> idField = beanMapper.getId();
+        if (!idField.isPresent()) {
+            throw new EntityDeclarationException("@Id not found for class: " + declaringClass);
+        }
+
         final String idValue = attributeValues.stream()
-                .filter(attr -> attr.getAttribute().getField().equals(idField))
+                .filter(attr -> attr.getAttribute().getName().equals(idField.get()))
                 .findFirst()
                 .map(AttributeValue::getAttributeValue)
                 .map(Value::getValue)
@@ -262,7 +184,8 @@ public class EntityHelperImpl implements EntityHelper {
     @Override
     public <T> String getCollectionPath(final List<AttributeValue<T, ?>> attributeValues) {
         final Class<T> declaringClass = getDeclaringClass(attributeValues);
-        final Entity entity = EntityHelper.getEntity(declaringClass);
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(declaringClass);
+        final Entity entity = beanMapper.getEntity();
 
         return getParentPath(attributeValues) + entity.value();
     }
@@ -278,7 +201,7 @@ public class EntityHelperImpl implements EntityHelper {
 
         for (MappedClassField mappedClassField : mappedClassFields) {
 
-            final String parentId = valueMap.get(mappedClassField.getField().getName()).getAttributeValue().getValue().toString();
+            final String parentId = valueMap.get(mappedClassField.getField()).getAttributeValue().getValue().toString();
             if (parentId == null) {
                 throw new EntityDeclarationException("parent id cannot be null: " + mappedClassField.getField());
             }
@@ -296,30 +219,11 @@ public class EntityHelperImpl implements EntityHelper {
         return attributeValues.stream().findFirst().map(AttributeValue::getAttribute).map(Attribute::getDeclaringType).orElseThrow(() -> new IllegalArgumentException("Keys not set"));
     }
 
-    private List<Field> getIdReferenceFields(final Class<?> type) throws ExecutionException {
-        return idReferences.get(type, () -> {
-                    final List<Field> references = Lists.newArrayList();
-                    final Field[] declaredFields = type.getDeclaredFields();
-                    for (Field declaredField : declaredFields) {
-                        if (declaredField.getAnnotation(IdReference.class) != null) {
-                            references.add(declaredField);
-                        }
-                    }
 
-                    return references;
-                });
+    @SuppressWarnings("unchecked")
+    private <T> String getValueInString(final T entity, final MappedClassField declaredField) {
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        return beanMapper.getValue(entity, declaredField.getField()).toString();
     }
 
-    private <T> String getValueInString(final T entity, final Field declaredField) {
-        try {
-            declaredField.setAccessible(true);
-            final Object id = declaredField.get(entity);
-            return id == null ? null : id.toString();
-        } catch (final IllegalAccessException e) {
-            throw new EntityDeclarationException("Unable to access field: " + declaredField.getName());
-        }
-    }
-
-    private static class SkipException extends RuntimeException {
-    }
 }

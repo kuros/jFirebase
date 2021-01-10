@@ -138,25 +138,6 @@ class EntityHelperImplTest {
     }
 
     @Test
-    void shouldGetUpdateField() {
-        final Field updateTimeField = EntityHelper.INSTANCE.getUpdateTimeField(EntitySuperParent.class);
-        Assertions.assertEquals("updateTime", updateTimeField.getName());
-    }
-
-    @Test
-    void shouldGetAllRequiredFields() {
-        final Set<Field> allRequiredIdFields = EntityHelper.INSTANCE.getAllRequiredIdFields(EntityObject.class);
-        final Set<String> actualFieldNames = allRequiredIdFields
-                .stream()
-                .map(Field::getName)
-                .collect(Collectors.toSet());
-
-        final Set<String> expected = Sets.newHashSet("id", "parentId", "superParentId");
-
-        Assertions.assertEquals(expected, actualFieldNames);
-    }
-
-    @Test
     void shouldThrowExceptionWhenIdFieldsAreMissing() {
         final EntityObject entityObject = new EntityObject();
 

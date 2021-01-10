@@ -1,65 +1,50 @@
 package in.kuros.jfirebase.entity;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import in.kuros.jfirebase.metadata.MetadataException;
+import com.google.common.collect.Lists;
+import in.kuros.jfirebase.util.BeanMapper;
+import in.kuros.jfirebase.util.ClassMapper;
 import in.kuros.jfirebase.util.CustomCollectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Stack;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class EntityParentCache {
-    private Cache<Class<?>, List<Class<?>>> parentCache;
-    private Cache<Class<?>, List<MappedClassField>> mappedClassFieldCache;
-
-    private EntityParentCache() {
-        this.parentCache = CacheBuilder.newBuilder().build();
-        this.mappedClassFieldCache = CacheBuilder.newBuilder().build();
-    }
+    private static final ConcurrentMap<Class<?>, List<Class<?>>> PARENT_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, List<MappedClassField>> MAPPED_FIELD = new ConcurrentHashMap<>();
 
     public static final EntityParentCache INSTANCE = new EntityParentCache();
 
     public List<Class<?>> getParents(final Class<?> type) {
-        try {
-            return parentCache.get(type, () -> findParentsInOrder(type));
-        } catch (final ExecutionException e) {
-            throw new EntityDeclarationException(e);
-        }
+        PARENT_CACHE.computeIfAbsent(type, this::findParentsInOrder);
+        return PARENT_CACHE.get(type);
     }
 
     public List<MappedClassField> getMappedClassFields(final Class<?> type) {
-        try {
-            return mappedClassFieldCache.get(type, () -> findMappedClassFieldsInOrder(type));
-        } catch (final ExecutionException e) {
-            throw new EntityDeclarationException(e);
-        }
+        MAPPED_FIELD.computeIfAbsent(type, aClass -> findMappedClassFieldsInOrder(type));
+        return MAPPED_FIELD.get(type);
     }
 
     private List<MappedClassField> findMappedClassFieldsInOrder(final Class<?> type) {
 
-        final List<Field> allParentFields = getAllParentFields(type);
-        final Map<? extends Class<?>, Field> mappedClassToFieldMap = allParentFields.
+
+        final List<MappedClassField> allParentFields = getAllParentFields(type);
+        final Map<? extends Class<?>, MappedClassField> mappedClassToFieldMap = allParentFields.
                 stream()
-                .collect(CustomCollectors.toMap(this::getMappedClass, Function.identity()));
+                .collect(CustomCollectors.toMap(MappedClassField::getMappedClass, Function.identity()));
 
         final List<MappedClassField> result = new ArrayList<>();
         for (Class<?> parentClass : getParents(type)) {
-            final Field field = mappedClassToFieldMap.get(parentClass);
-            if (field == null) {
-                throw new EntityDeclarationException("Use @Parent or @IdReference, no parent reference mapping found: " + parentClass);
-            }
-
-            result.add(new MappedClassField(parentClass, field));
+            result.add(mappedClassToFieldMap.get(parentClass));
         }
 
         return result;
@@ -72,26 +57,15 @@ public final class EntityParentCache {
 
         Class<?> ref = type;
         while (true) {
-            final List<IdReference> parents = Arrays.stream(ref.getDeclaredFields())
-                    .filter(field -> field.isAnnotationPresent(Parent.class))
-                    .map(field -> {
-                        final IdReference idReference = field.getAnnotation(IdReference.class);
-                        if (idReference == null) {
-                            throw new EntityDeclarationException("@IdReference missing for : " + field);
-                        }
-                        return idReference;
-                    })
-                    .collect(Collectors.toList());
-
-            if (parents.isEmpty()) {
+            final BeanMapper<?> beanMapper = ClassMapper.getBeanMapper(ref);
+            final Collection<Parent> values = beanMapper.getParent().values();
+            if (values.isEmpty()) {
                 break;
             }
 
-            if (parents.size() > 1) {
-                throw new MetadataException("Multiple parent defined, only 1 supported: " + ref.getName());
-            }
+            final Parent parent = Lists.newArrayList(values).get(0);
 
-            ref = parents.get(0).value();
+            ref = parent.value();
             stack.push(ref);
         }
 
@@ -105,23 +79,27 @@ public final class EntityParentCache {
     @AllArgsConstructor
     @Getter
     public static class MappedClassField {
+        private String field;
         private Class<?> mappedClass;
-        private Field field;
+        private String collection;
     }
 
     private Class<?> getMappedClass(final Field field) {
         return field.getAnnotation(IdReference.class).value();
     }
 
-    private List<Field> getAllParentFields(final Class<?> aClass) {
-        final Field[] declaredFields = aClass.getDeclaredFields();
-        final List<Field> fields = Arrays.stream(declaredFields)
-                .filter(field -> field.isAnnotationPresent(IdReference.class))
+    private List<MappedClassField> getAllParentFields(final Class<?> aClass) {
+        final BeanMapper<?> beanMapper = ClassMapper.getBeanMapper(aClass);
+
+        final List<MappedClassField> classFields = beanMapper.getIdReferences()
+                .entrySet()
+                .stream()
+                .map(entry -> new MappedClassField(entry.getKey(), entry.getValue().value(), entry.getValue().collection()))
                 .collect(Collectors.toList());
-        final Optional<Field> parentMapping = fields.stream().filter(field -> field.isAnnotationPresent(Parent.class)).findFirst();
-        if (!fields.isEmpty() && !parentMapping.isPresent()) {
-            throw new EntityDeclarationException("One @Parent mapping required with @IdReference for class: " + aClass.getName());
-        }
-        return fields;
+
+        beanMapper.getParent()
+                .forEach((key, value) -> classFields.add(new MappedClassField(key, value.value(), value.collection())));
+
+        return classFields;
     }
 }

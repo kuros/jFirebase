@@ -1,12 +1,11 @@
 package in.kuros.jfirebase.provider.firebase;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.firestore.FieldPath;
-import com.google.cloud.firestore.FieldValue;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
 import in.kuros.jfirebase.metadata.ValuePath;
+import in.kuros.jfirebase.util.ClassMapper;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -16,8 +15,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class AttributeValueHelper {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EntityHelper entityHelper;
 
@@ -52,8 +49,7 @@ public class AttributeValueHelper {
                     field.setAccessible(true);
                     try {
                         if (MapAttributeValue.class.isAssignableFrom(attributeValue.getClass())) {
-                            final Map map = getMapValueForField(entity, attributeValue, field);
-                            field.set(entity, map);
+                            field.set(entity, getMapValueForField(entity, attributeValue, field));
                         } else {
                             field.set(entity, attributeValue.getAttributeValue().getValue());
                         }
@@ -109,26 +105,14 @@ public class AttributeValueHelper {
                 }
                 final String attributeName = attributeValue.getAttribute().getName();
                 final Map<String, Object> mapField = (Map<String, Object>) result.getOrDefault(attributeName, new HashMap<>());
-                mapField.put((String) mapAttributeValue.getKey(), parseValue(mapAttributeValue.getMapValue().getValue()));
+                mapField.put((String) mapAttributeValue.getKey(), ClassMapper.serialize(mapAttributeValue.getMapValue().getValue()));
                 result.put(attributeName, mapField);
             } else {
-                result.put(attributeValue.getAttribute().getName(), parseValue(attributeValue.getAttributeValue().getValue()));
+                result.put(attributeValue.getAttribute().getName(), ClassMapper.serialize(attributeValue.getAttributeValue().getValue()));
             }
         }
 
         return result;
-    }
-
-    private Object parseValue(final Object value) {
-        if (value instanceof Number || value instanceof String || value instanceof List || value instanceof FieldValue) {
-            return value;
-        }
-
-        if (value instanceof Enum<?>) {
-            return ((Enum<?>)value).name();
-        }
-
-        return OBJECT_MAPPER.convertValue(value, Map.class);
     }
 
     public void addValuePaths(final Map<String, Object> objectMap, final List<ValuePath<?>> valuePaths) {
@@ -147,7 +131,7 @@ public class AttributeValueHelper {
     @SuppressWarnings("unchecked")
     private void addValuePath(final Map<String, Object> objectMap, final ValuePath valuePath, final int index) {
         if (index + 1 >= valuePath.getPath().length) {
-            objectMap.put(valuePath.getPath()[index], parseValue(valuePath.getValue()));
+            objectMap.put(valuePath.getPath()[index], ClassMapper.serialize(valuePath.getValue()));
             return;
         }
 

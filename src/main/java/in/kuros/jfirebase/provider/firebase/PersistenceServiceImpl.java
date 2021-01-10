@@ -26,7 +26,6 @@ import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -87,9 +86,10 @@ class PersistenceServiceImpl implements PersistenceService {
 
         final List<String> fields = Lists.newArrayList(attribute.getName());
 
-        if (entityHelper.setUpdateTime(entity)) {
-            final String updateFieldName = entityHelper.getUpdateTimeField(entity.getClass()).getName();
-            fields.add(updateFieldName);
+        final Optional<String> updateTimeFieldName = entityHelper.getUpdateTimeFieldName((Class<?>) entity);
+        if (updateTimeFieldName.isPresent()) {
+            entityHelper.setUpdateTime(entity);
+            fields.add(updateTimeFieldName.get());
         }
 
         try {
@@ -116,7 +116,7 @@ class PersistenceServiceImpl implements PersistenceService {
 
             final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(declaringClass);
             updateTimeField.ifPresent(name -> {
-                updateMap.put(name, new Date());
+                updateMap.put(name, FieldValue.serverTimestamp());
                 fieldPaths.add(FieldPath.of(name));
             });
 

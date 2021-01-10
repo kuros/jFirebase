@@ -1,7 +1,6 @@
 package in.kuros.jfirebase.provider.firebase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.firestore.FieldPath;
 import com.google.common.collect.Lists;
 import in.kuros.jfirebase.entity.TestClass;
@@ -84,16 +83,5 @@ class AttributeValueHelperTest {
         map.put("xyz", "lkasd");
 
         attributeValueHelper.addValuePaths(map, Lists.newArrayList(ValuePath.of(1, "a", "b", "c"), ValuePath.of(1, "a", "x", "d")));
-
-        assertEquals("{\"a\":{\"b\":{\"c\":1},\"x\":{\"d\":1}},\"xyz\":\"lkasd\"}", new ObjectMapper().writeValueAsString(map));
-    }
-
-    @Test
-    void name() {
-        final Map<String, Object> map = new HashMap<>();
-        map.put("xyz", new TestClass());
-
-        final Map map1 = new ObjectMapper().convertValue(map, Map.class);
-        System.out.println(map1);
     }
 }
