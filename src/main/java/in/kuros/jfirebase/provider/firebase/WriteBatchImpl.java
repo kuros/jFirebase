@@ -14,6 +14,8 @@ import in.kuros.jfirebase.metadata.SetAttribute.Helper;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
 import in.kuros.jfirebase.metadata.ValuePath;
 import in.kuros.jfirebase.transaction.WriteBatch;
+import in.kuros.jfirebase.util.BeanMapper;
+import in.kuros.jfirebase.util.ClassMapper;
 
 import java.util.Date;
 import java.util.List;
@@ -40,15 +42,17 @@ public class WriteBatchImpl implements WriteBatch {
         final String id = entityHelper.getId(entity);
         entityHelper.setCreateTime(entity);
         final DocumentReference document = id == null ? collectionReference.document() : collectionReference.document(id);
-        updateBuilder.create(document, entity);
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getBeanClass(entity));
+
+        updateBuilder.create(document, beanMapper.serialize(entity));
         entityHelper.setId(entity, document.getId());
     }
 
     @Override
     public <T> void set(final T entity) {
         final DocumentReference document = getDocumentReference(entity);
-        entityHelper.setUpdateTime(entity);
-        updateBuilder.set(document, entity);
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getBeanClass(entity));
+        updateBuilder.set(document, beanMapper.serialize(entity));
     }
 
     @Override
@@ -94,6 +98,10 @@ public class WriteBatchImpl implements WriteBatch {
         final List<AttributeValue<T, ?>> attributeValues = UpdateAttribute.Helper.getAttributeValues(updateAttribute);
         final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(attributeValues);
         attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
+        final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(UpdateAttribute.Helper.getDeclaringClass(updateAttribute));
+        updateTimeField.ifPresent(name -> {
+            valueMap.put(name, new Date());
+        });
 
         final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
         final DocumentReference documentReference = firestore.document(documentPath);
@@ -110,6 +118,11 @@ public class WriteBatchImpl implements WriteBatch {
     public <T> void delete(final T entity) {
         final DocumentReference document = getDocumentReference(entity);
         updateBuilder.delete(document);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Class<T> getBeanClass(final T entity) {
+        return (Class<T>) entity.getClass();
     }
 
     private <T> CollectionReference getCollectionReference(final T entity) {

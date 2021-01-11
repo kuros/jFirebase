@@ -78,5 +78,13 @@ public final class UpdateAttribute<T> {
         static <T> List<ValuePath<?>> getValuePaths(UpdateAttribute<T> updateAttribute) {
             return updateAttribute.valuePaths;
         }
+
+        static <T> Class<T> getDeclaringClass(UpdateAttribute<T> updateAttribute) {
+            if (updateAttribute.keys.isEmpty()) {
+                throw new IllegalStateException("No Keys provided");
+            }
+
+            return updateAttribute.keys.get(0).getAttribute().getDeclaringType();
+        }
     }
 }

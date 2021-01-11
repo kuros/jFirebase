@@ -25,6 +25,8 @@ import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
+import in.kuros.jfirebase.util.BeanMapper;
+import in.kuros.jfirebase.util.ClassMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -54,7 +56,9 @@ class PersistenceServiceImpl implements PersistenceService {
             final String id = entityHelper.getId(entity);
             final DocumentReference documentReference = id == null ? collectionReference.document() : collectionReference.document(id);
             entityHelper.setCreateTime(entity);
-            documentReference.create(entity).get();
+
+            final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
+            documentReference.create(beanMapper.serialize(entity)).get();
             entityHelper.setId(entity, documentReference.getId());
             return entity;
         } catch (InterruptedException | ExecutionException e) {
@@ -68,9 +72,9 @@ class PersistenceServiceImpl implements PersistenceService {
         final com.google.cloud.firestore.WriteBatch batch = firestore.batch();
 
         for (T entity : entities) {
-            entityHelper.setUpdateTime(entity);
             final DocumentReference documentReference = getDocumentReference(entity);
-            batch.set(documentReference, entity);
+            final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
+            batch.set(documentReference, beanMapper.serialize(entity), SetOptions.merge());
         }
 
         try {
@@ -83,17 +87,11 @@ class PersistenceServiceImpl implements PersistenceService {
     @Override
     public <T> void set(final T entity, final Attribute<T, ?> attribute) {
         final DocumentReference documentReference = getDocumentReference(entity);
-
         final List<String> fields = Lists.newArrayList(attribute.getName());
 
-        final Optional<String> updateTimeFieldName = entityHelper.getUpdateTimeFieldName((Class<?>) entity);
-        if (updateTimeFieldName.isPresent()) {
-            entityHelper.setUpdateTime(entity);
-            fields.add(updateTimeFieldName.get());
-        }
-
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
         try {
-            documentReference.set(entity, SetOptions.mergeFields(fields)).get();
+            documentReference.set(beanMapper.serialize(entity), SetOptions.mergeFields(fields)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new PersistenceException(e);
         }
@@ -151,6 +149,8 @@ class PersistenceServiceImpl implements PersistenceService {
         try {
             final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
             attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
+            final Optional<String> updateTimeField = entityHelper.getUpdateTimeFieldName(UpdateAttribute.Helper.getDeclaringClass(updateAttribute));
+            updateTimeField.ifPresent(name -> valueMap.put(name, FieldValue.serverTimestamp()));
 
             final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
             final DocumentReference documentReference = firestore.document(documentPath);
@@ -245,6 +245,11 @@ class PersistenceServiceImpl implements PersistenceService {
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Class<T> getClass(final T entity) {
+        return (Class<T>) entity.getClass();
     }
 
     private <T> DocumentReference getDocumentReference(final T entity) {

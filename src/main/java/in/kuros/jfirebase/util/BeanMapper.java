@@ -7,6 +7,7 @@ import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.entity.Id;
 import in.kuros.jfirebase.entity.IdReference;
+import in.kuros.jfirebase.entity.IdReference.DEFAULT;
 import in.kuros.jfirebase.entity.Parent;
 import in.kuros.jfirebase.entity.UpdateTime;
 import lombok.Getter;
@@ -89,7 +90,11 @@ public class BeanMapper<T> {
                 if (!parent.isEmpty() && declaredField.isAnnotationPresent(Parent.class)) {
                     throw new EntityDeclarationException("Multiple @Parent mapping found or class: " + clazz.getName());
                 } else if (declaredField.isAnnotationPresent(Parent.class)) {
-                    parent.put(propertyName, declaredField.getAnnotation(Parent.class));
+                    final Parent annotation = declaredField.getAnnotation(Parent.class);
+                    if (annotation.value() == DEFAULT.class && annotation.collection().isEmpty()) {
+                        throw new EntityDeclarationException("Parent is missing either value/collection for field: " + propertyName);
+                    }
+                    parent.put(propertyName, annotation);
                 }
 
                 if (createdProperty != null && declaredField.isAnnotationPresent(CreateTime.class)) {
@@ -107,7 +112,11 @@ public class BeanMapper<T> {
                 }
 
                 if (declaredField.isAnnotationPresent(IdReference.class)) {
-                    idReferences.put(propertyName, declaredField.getAnnotation(IdReference.class));
+                    final IdReference annotation = declaredField.getAnnotation(IdReference.class);
+                    if (annotation.value() == DEFAULT.class && annotation.collection().isEmpty()) {
+                        throw new EntityDeclarationException("Parent is missing either value/collection for field: " + propertyName);
+                    }
+                    idReferences.put(propertyName, annotation);
                 }
 
             }
@@ -182,7 +191,7 @@ public class BeanMapper<T> {
         }
     }
 
-    Map<String, Object> serialize(T object) {
+    public Map<String, Object> serialize(T object) {
         if (!clazz.isAssignableFrom(object.getClass())) {
             throw new IllegalArgumentException(
                     "Can't serialize object of class "
