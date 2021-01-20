@@ -235,6 +235,7 @@ public class BeanMapper<T> {
         return result;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public void setValue(final T object, final String propertyName, Object value) {
 
         if (setters.containsKey(propertyName) && !propertyName.equals(createTime) && !propertyName.equals(updateTime)) {
@@ -243,8 +244,12 @@ public class BeanMapper<T> {
             if (params.length != 1) {
                 throw new   EntityDeclarationException("Setter does not have exactly one parameter");
             }
+
+            final Class paramClass = (Class) params[0];
+            final Object parsedValue = paramClass.isEnum() ? Enum.valueOf(paramClass, value.toString()) : value;
+
             try {
-                setter.invoke(object, value);
+                setter.invoke(object, parsedValue);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
