@@ -7,10 +7,7 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Parent {
+public @interface CollectionParent {
     Class<?> value() default IdReference.DEFAULT.class;
-
     String collection() default "";
-
-    CollectionParent collectionParent() default @CollectionParent();
 }

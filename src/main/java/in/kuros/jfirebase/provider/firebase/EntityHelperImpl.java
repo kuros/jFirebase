@@ -5,7 +5,7 @@ import com.google.common.collect.Sets;
 import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.entity.EntityParentCache;
-import in.kuros.jfirebase.entity.EntityParentCache.MappedClassField;
+import in.kuros.jfirebase.entity.EntityParentCache.FieldCollectionMapping;
 import in.kuros.jfirebase.entity.IdReference;
 import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.Attribute;
@@ -101,9 +101,9 @@ public class EntityHelperImpl implements EntityHelper {
     }
 
     private <T> void addParentPath(final T entity, final StringBuilder stringBuilder) {
-        final List<MappedClassField> mappedClassFields = EntityParentCache.INSTANCE.getMappedClassFields(entity.getClass());
+        final List<FieldCollectionMapping> mappedClassFields = EntityParentCache.INSTANCE.getFieldCollectionMappings(entity.getClass());
 
-        for (MappedClassField mappedClassField : mappedClassFields) {
+        for (FieldCollectionMapping mappedClassField : mappedClassFields) {
 
             final String parentId = getValueInString(entity, mappedClassField);
             if (parentId == null) {
@@ -117,7 +117,7 @@ public class EntityHelperImpl implements EntityHelper {
         }
     }
 
-    private String getParentCollection(final MappedClassField mappedClassField) {
+    private String getParentCollection(final FieldCollectionMapping mappedClassField) {
         final String value;
         if (mappedClassField.getMappedClass() == IdReference.DEFAULT.class) {
             value = mappedClassField.getCollection();
@@ -197,9 +197,9 @@ public class EntityHelperImpl implements EntityHelper {
         final Map<String, AttributeValue<T, ?>> valueMap = attributeValues.stream()
                 .collect(Collectors.toMap(attr -> attr.getAttribute().getName(), Function.identity()));
 
-        final List<MappedClassField> mappedClassFields = EntityParentCache.INSTANCE.getMappedClassFields(declaringClass);
+        final List<FieldCollectionMapping> mappedClassFields = EntityParentCache.INSTANCE.getFieldCollectionMappings(declaringClass);
 
-        for (MappedClassField mappedClassField : mappedClassFields) {
+        for (FieldCollectionMapping mappedClassField : mappedClassFields) {
 
             final String parentId = valueMap.get(mappedClassField.getField()).getAttributeValue().getValue().toString();
             if (parentId == null) {
@@ -221,7 +221,7 @@ public class EntityHelperImpl implements EntityHelper {
 
 
     @SuppressWarnings("unchecked")
-    private <T> String getValueInString(final T entity, final MappedClassField declaredField) {
+    private <T> String getValueInString(final T entity, final FieldCollectionMapping declaredField) {
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
         return beanMapper.getValue(entity, declaredField.getField()).toString();
     }
