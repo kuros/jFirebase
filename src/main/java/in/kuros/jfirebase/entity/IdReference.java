@@ -12,5 +12,7 @@ public @interface IdReference {
 
     String collection() default "";
 
+    CollectionParent collectionParent() default @CollectionParent();
+
     final class DEFAULT {}
 }
