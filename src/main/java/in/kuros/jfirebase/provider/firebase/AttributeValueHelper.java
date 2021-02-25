@@ -5,6 +5,7 @@ import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.MapAttributeValue;
 import in.kuros.jfirebase.metadata.ValuePath;
+import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
 
 import java.lang.reflect.Constructor;
@@ -96,20 +97,33 @@ public class AttributeValueHelper {
     public <T> Map<String, Object> convertToObjectMap(final List<AttributeValue<T, ?>> attributeValues) {
         final Map<String, Object> result = new HashMap<>();
 
+        if (attributeValues.isEmpty()) {
+            return result;
+        }
+
+        final Class<T> declaringType = attributeValues.get(0).getAttribute().getDeclaringType();
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(declaringType);
+
         for (AttributeValue<T, ?> attributeValue : attributeValues) {
+            final String propertyName = attributeValue.getAttribute().getName();
             if (MapAttributeValue.class.isAssignableFrom(attributeValue.getClass())
                     && ((MapAttributeValue) attributeValue).isKeyUpdate()) {
                 final MapAttributeValue mapAttributeValue = (MapAttributeValue) attributeValue;
                 if (!(mapAttributeValue.getKey() instanceof String)) {
                     throw new IllegalArgumentException("Object keys are not supported in firebase/firestore");
                 }
-                final String attributeName = attributeValue.getAttribute().getName();
-                final Map<String, Object> mapField = (Map<String, Object>) result.getOrDefault(attributeName, new HashMap<>());
+                final Map<String, Object> mapField = (Map<String, Object>) result.getOrDefault(propertyName, new HashMap<>());
                 mapField.put((String) mapAttributeValue.getKey(), ClassMapper.serialize(mapAttributeValue.getMapValue().getValue()));
-                result.put(attributeName, mapField);
+                result.put(propertyName, mapField);
             } else {
-                result.put(attributeValue.getAttribute().getName(), ClassMapper.serialize(attributeValue.getAttributeValue().getValue()));
+                result.put(propertyName, ClassMapper.serialize(attributeValue.getAttributeValue().getValue()));
             }
+
+            if (beanMapper.getTemporals().containsKey(propertyName)) {
+                final Object parsedValue = beanMapper.parseTemporalValues(propertyName, result.get(propertyName));
+                result.put(propertyName, parsedValue);
+            }
+
         }
 
         return result;

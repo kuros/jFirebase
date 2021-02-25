@@ -246,7 +246,7 @@ public class BeanMapper<T> {
         return result;
     }
 
-    private Object parseTemporalValues(final String property, Object propertyValue) {
+    public Object parseTemporalValues(final String property, Object propertyValue) {
         if (temporals.containsKey(property)) {
             final Temporal temporal = temporals.get(property);
             if (temporal.value() == TemporalType.DATE) {
