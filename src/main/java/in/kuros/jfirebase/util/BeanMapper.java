@@ -9,6 +9,8 @@ import in.kuros.jfirebase.entity.Id;
 import in.kuros.jfirebase.entity.IdReference;
 import in.kuros.jfirebase.entity.IdReference.DEFAULT;
 import in.kuros.jfirebase.entity.Parent;
+import in.kuros.jfirebase.entity.Temporal;
+import in.kuros.jfirebase.entity.TemporalType;
 import in.kuros.jfirebase.entity.UpdateTime;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -19,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +40,7 @@ public class BeanMapper<T> {
     private final Map<String, Method> getters;
     private final Map<String, Method> setters;
     private final Map<String, Field> fields;
+    private final Map<String, Temporal> temporals;
     private final String createTime;
     private final String updateTime;
     private final Map<String, IdReference> idReferences;
@@ -51,6 +55,7 @@ public class BeanMapper<T> {
         this.fields = new HashMap<>();
         this.idReferences = new HashMap<>();
         this.parent = new HashMap<>();
+        this.temporals = new HashMap<>();
 
         Constructor<T> constructor;
         try {
@@ -119,6 +124,10 @@ public class BeanMapper<T> {
                     idReferences.put(propertyName, annotation);
                 }
 
+                if (declaredField.isAnnotationPresent(Temporal.class) && declaredField.getType() == Date.class) {
+                    final Temporal annotation = declaredField.getAnnotation(Temporal.class);
+                    temporals.put(propertyName, annotation);
+                }
             }
         }
 
@@ -207,6 +216,7 @@ public class BeanMapper<T> {
                 Method getter = getters.get(property);
                 try {
                     propertyValue = getter.invoke(object);
+                    propertyValue = parseTemporalValues(property, propertyValue);
                 } catch (IllegalAccessException | InvocationTargetException e) {
                     throw new RuntimeException(e);
                 }
@@ -218,6 +228,7 @@ public class BeanMapper<T> {
                 }
                 try {
                     propertyValue = field.get(object);
+                    propertyValue = parseTemporalValues(property, propertyValue);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException(e);
                 }
@@ -235,6 +246,16 @@ public class BeanMapper<T> {
         return result;
     }
 
+    private Object parseTemporalValues(final String property, Object propertyValue) {
+        if (temporals.containsKey(property)) {
+            final Temporal temporal = temporals.get(property);
+            if (temporal.value() == TemporalType.DATE) {
+                propertyValue = DateUtil.getDateWithoutTime((Date) propertyValue);
+            }
+        }
+        return propertyValue;
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void setValue(final T object, final String propertyName, Object value) {
 
@@ -242,11 +263,12 @@ public class BeanMapper<T> {
             Method setter = setters.get(propertyName);
             Type[] params = setter.getGenericParameterTypes();
             if (params.length != 1) {
-                throw new   EntityDeclarationException("Setter does not have exactly one parameter");
+                throw new EntityDeclarationException("Setter does not have exactly one parameter");
             }
 
             final Class paramClass = (Class) params[0];
-            final Object parsedValue = paramClass.isEnum() ? Enum.valueOf(paramClass, value.toString()) : value;
+            Object parsedValue = paramClass.isEnum() ? Enum.valueOf(paramClass, value.toString()) : value;
+            parsedValue = parseTemporalValues(propertyName, parsedValue);
 
             try {
                 setter.invoke(object, parsedValue);
@@ -277,7 +299,7 @@ public class BeanMapper<T> {
             Method getter = getters.get(propertyName);
             Type[] params = getter.getGenericParameterTypes();
             if (params.length != 0) {
-                throw new   EntityDeclarationException("found parameters for getter");
+                throw new EntityDeclarationException("found parameters for getter");
             }
             try {
                 return getter.invoke(object);
@@ -392,7 +414,7 @@ public class BeanMapper<T> {
     }
 
     private static String serializedName(String methodName) {
-        String[] prefixes = new String[] {"get", "set", "is"};
+        String[] prefixes = new String[]{"get", "set", "is"};
         String methodPrefix = null;
         for (String prefix : prefixes) {
             if (methodName.startsWith(prefix)) {
