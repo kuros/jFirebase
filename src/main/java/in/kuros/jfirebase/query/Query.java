@@ -4,6 +4,8 @@ package in.kuros.jfirebase.query;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.MapAttribute;
 
+import java.util.List;
+
 public interface Query<T> {
 
     <X> Query<T> whereEqualTo(Attribute<T, X> field, X value);
@@ -11,6 +13,12 @@ public interface Query<T> {
     <K, V> Query<T> whereEqualTo(MapAttribute<T, K, V> field, K key, V value);
 
     <X> Query<T> whereEqualTo(String field, X value);
+
+    <X> Query<T> whereNotEqualTo(Attribute<T, X> field, X value);
+
+    <K, V> Query<T> whereNotEqualTo(MapAttribute<T, K, V> field, K key, V value);
+
+    <X> Query<T> whereNotEqualTo(String field, X value);
 
     <X> Query<T> whereGreaterThan(Attribute<T, X> field, X value);
 
@@ -31,6 +39,18 @@ public interface Query<T> {
     <X> Query<T> whereArrayContains(Attribute<T, X> field, Object value);
 
     Query<T> whereArrayContains(String field, Object value);
+
+    <X> Query<T> whereArrayContainsAny(Attribute<T, X> field, List<Object> value);
+
+    Query<T> whereArrayContainsAny(String field, List<Object> value);
+
+    <X> Query<T> whereIn(Attribute<T, X> field, List<X> value);
+
+    Query<T> whereIn(String field, List<?> value);
+
+    <X> Query<T> whereNotIn(Attribute<T, X> field, List<X> value);
+
+    Query<T> whereNotIn(String field, List<?> value);
 
     Query<T> limit(int limit);
 

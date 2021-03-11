@@ -38,6 +38,23 @@ abstract class QueryImpl<T> implements Query<T> {
     }
 
     @Override
+    public <X> Query<T> whereNotEqualTo(final Attribute<T, X> field, final X value) {
+        whereNotEqualTo(field.getName(), value);
+        return this;
+    }
+
+    @Override
+    public <K, V> Query<T> whereNotEqualTo(final MapAttribute<T, K, V> field, final K key, final V value) {
+        return whereNotEqualTo(field.getName() + "." + key, value);
+    }
+
+    @Override
+    public <X> Query<T> whereNotEqualTo(final String field, final X value) {
+        queries.add(query -> query.whereNotEqualTo(field, value));
+        return this;
+    }
+
+    @Override
     public <X> Query<T> whereGreaterThan(final Attribute<T, X> field, final X value) {
         whereGreaterThan(field.getName(), value);
         return this;
@@ -94,6 +111,42 @@ abstract class QueryImpl<T> implements Query<T> {
     @Override
     public Query<T> whereArrayContains(final String field, final Object value) {
         queries.add(query -> query.whereArrayContains(field, value));
+        return this;
+    }
+
+    @Override
+    public <X> Query<T> whereArrayContainsAny(final Attribute<T, X> field, final List<Object> values) {
+        whereArrayContainsAny(field.getName(), values);
+        return this;
+    }
+
+    @Override
+    public Query<T> whereArrayContainsAny(final String field, final List<Object> values) {
+        queries.add(query -> query.whereArrayContainsAny(field, values));
+        return this;
+    }
+
+    @Override
+    public <X> Query<T> whereIn(final Attribute<T, X> field, final List<X> values) {
+        whereIn(field.getName(), values);
+        return this;
+    }
+
+    @Override
+    public Query<T> whereIn(final String field, final List<?> values) {
+        queries.add(query -> query.whereArrayContainsAny(field, values));
+        return this;
+    }
+
+    @Override
+    public <X> Query<T> whereNotIn(final Attribute<T, X> field, final List<X> values) {
+        whereNotIn(field.getName(), values);
+        return this;
+    }
+
+    @Override
+    public Query<T> whereNotIn(final String field, final List<?> values) {
+        queries.add(query -> query.whereArrayContainsAny(field, values));
         return this;
     }
 
