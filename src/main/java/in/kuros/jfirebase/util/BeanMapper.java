@@ -91,7 +91,7 @@ public class BeanMapper<T> {
 
                 final Field declaredField = clazz.getDeclaredField(propertyName);
                 declaredField.setAccessible(true);
-                if (declaredField.isAnnotationPresent(Transient.class)) {
+                if (declaredField.isAnnotationPresent(Transient.class) || Modifier.isTransient(declaredField.getModifiers())) {
                     transients.add(propertyName);
                 }
                 if (idProperty != null && declaredField.isAnnotationPresent(Id.class)) {
