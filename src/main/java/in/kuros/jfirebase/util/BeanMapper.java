@@ -11,6 +11,7 @@ import in.kuros.jfirebase.entity.IdReference.DEFAULT;
 import in.kuros.jfirebase.entity.Parent;
 import in.kuros.jfirebase.entity.Temporal;
 import in.kuros.jfirebase.entity.TemporalType;
+import in.kuros.jfirebase.entity.Transient;
 import in.kuros.jfirebase.entity.UpdateTime;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -23,9 +24,11 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Getter
 public class BeanMapper<T> {
@@ -40,6 +43,7 @@ public class BeanMapper<T> {
     private final Map<String, Method> getters;
     private final Map<String, Method> setters;
     private final Map<String, Field> fields;
+    private final Set<String> transients;
     private final Map<String, Temporal> temporals;
     private final String createTime;
     private final String updateTime;
@@ -56,6 +60,7 @@ public class BeanMapper<T> {
         this.idReferences = new HashMap<>();
         this.parent = new HashMap<>();
         this.temporals = new HashMap<>();
+        this.transients = new HashSet<>();
 
         Constructor<T> constructor;
         try {
@@ -86,6 +91,9 @@ public class BeanMapper<T> {
 
                 final Field declaredField = clazz.getDeclaredField(propertyName);
                 declaredField.setAccessible(true);
+                if (declaredField.isAnnotationPresent(Transient.class)) {
+                    transients.add(propertyName);
+                }
                 if (idProperty != null && declaredField.isAnnotationPresent(Id.class)) {
                     throw new EntityDeclarationException("Multiple @Id mapping found or class: " + clazz.getName());
                 } else if (declaredField.isAnnotationPresent(Id.class)) {
@@ -210,6 +218,10 @@ public class BeanMapper<T> {
         }
         Map<String, Object> result = new HashMap<>();
         for (String property : properties.values()) {
+
+            if (transients.contains(property)) {
+                continue;
+            }
 
             Object propertyValue;
             if (getters.containsKey(property)) {
