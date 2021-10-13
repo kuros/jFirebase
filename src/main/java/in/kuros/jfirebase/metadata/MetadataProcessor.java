@@ -30,7 +30,7 @@ public final class MetadataProcessor {
             final Set<String> classNames = reflections.getStore().get(MetadataScanner.class.getSimpleName()).keySet();
 
             for (String className : classNames) {
-                final Class<?> type = Class.forName(className);
+                final Class<?> type = loadClass(className);
 
                 final Metadata metadata = type.getAnnotation(Metadata.class);
                 if (metadata == null) {
@@ -60,6 +60,14 @@ public final class MetadataProcessor {
             }
         } catch (final Exception e) {
             throw new EntityDeclarationException(e);
+        }
+    }
+
+    private Class<?> loadClass(String clf) throws ClassNotFoundException {
+        try {
+            return Class.forName(clf);
+        } catch (ClassNotFoundException e) {
+            return Thread.currentThread().getContextClassLoader().loadClass(clf);
         }
     }
 }

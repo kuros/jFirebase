@@ -134,7 +134,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public Query<T> whereIn(final String field, final List<?> values) {
-        queries.add(query -> query.whereArrayContainsAny(field, values));
+        queries.add(query -> query.whereIn(field, values));
         return this;
     }
 
@@ -146,7 +146,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public Query<T> whereNotIn(final String field, final List<?> values) {
-        queries.add(query -> query.whereArrayContainsAny(field, values));
+        queries.add(query -> query.whereNotIn(field, values));
         return this;
     }
 

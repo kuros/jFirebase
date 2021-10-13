@@ -9,11 +9,19 @@ public class MetadataScanner extends AbstractScanner {
     public void scan(final Object cls) {
         final ClassFile clf = (ClassFile) cls;
         try {
-            if (Class.forName(clf.getName()).isAnnotationPresent(Metadata.class)) {
+            if (loadClass(clf).isAnnotationPresent(Metadata.class)) {
                 getStore().put(clf.getName(), "");
             }
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
+        }
+    }
+
+    private Class<?> loadClass(ClassFile clf) throws ClassNotFoundException {
+        try {
+            return Class.forName(clf.getName());
+        } catch (ClassNotFoundException e) {
+            return Thread.currentThread().getContextClassLoader().loadClass(clf.getName());
         }
     }
 }
