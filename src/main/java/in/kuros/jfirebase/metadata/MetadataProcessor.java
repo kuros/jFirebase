@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import org.reflections.util.Utils;
 
 public final class MetadataProcessor {
 
@@ -27,7 +28,7 @@ public final class MetadataProcessor {
         try {
             final Reflections reflections = new Reflections(basePackage, new MetadataScanner());
 
-            final Set<String> classNames = reflections.getStore().get(MetadataScanner.class.getSimpleName()).keySet();
+            final Set<String> classNames = reflections.getStore().keys(Utils.index(MetadataScanner.class));
 
             for (String className : classNames) {
                 final Class<?> type = loadClass(className);
