@@ -13,6 +13,7 @@ import in.kuros.jfirebase.entity.Temporal;
 import in.kuros.jfirebase.entity.TemporalType;
 import in.kuros.jfirebase.entity.Transient;
 import in.kuros.jfirebase.entity.UpdateTime;
+import in.kuros.jfirebase.provider.firebase.EntityHelper;
 import lombok.Getter;
 import lombok.SneakyThrows;
 
@@ -48,6 +49,7 @@ public class BeanMapper<T> {
     private final String createTime;
     private final String updateTime;
     private final Map<String, IdReference> idReferences;
+    private final PropertyNamingStrategy namingStrategy;
 
     @SneakyThrows
     public BeanMapper(final Class<T> clazz) {
@@ -61,6 +63,7 @@ public class BeanMapper<T> {
         this.parent = new HashMap<>();
         this.temporals = new HashMap<>();
         this.transients = new HashSet<>();
+        this.namingStrategy = EntityHelper.INSTANCE.getPropertyNamingStrategy();
 
         Constructor<T> constructor;
         try {
@@ -252,8 +255,8 @@ public class BeanMapper<T> {
             } else {
                 serializedValue = ClassMapper.serialize(propertyValue);
             }
-
-            result.put(property, serializedValue);
+            String fieldName = namingStrategy.translate(property);
+            result.put(fieldName, serializedValue);
         }
         return result;
     }
@@ -437,7 +440,6 @@ public class BeanMapper<T> {
             throw new IllegalArgumentException("Unknown Bean prefix for method: " + methodName);
         }
         String strippedName = methodName.substring(methodPrefix.length());
-
         // Make sure the first word or upper-case prefix is converted to lower-case
         char[] chars = strippedName.toCharArray();
         int pos = 0;

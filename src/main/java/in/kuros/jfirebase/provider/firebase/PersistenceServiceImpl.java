@@ -28,6 +28,7 @@ import in.kuros.jfirebase.transaction.WriteBatch;
 import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
 
+import in.kuros.jfirebase.util.PropertyNamingStrategy;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,6 +47,11 @@ class PersistenceServiceImpl implements PersistenceService {
         this.firestore = firestore;
         this.entityHelper = EntityHelper.INSTANCE;
         this.attributeValueHelper = new AttributeValueHelper();
+    }
+
+    public PersistenceServiceImpl(Firestore firestore, PropertyNamingStrategy namingStrategy) {
+        this(firestore);
+        this.entityHelper.setPropertyNamingStrategy(namingStrategy);
     }
 
     @Override

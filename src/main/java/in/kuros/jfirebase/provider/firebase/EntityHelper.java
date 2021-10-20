@@ -4,6 +4,7 @@ import in.kuros.jfirebase.entity.Entity;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 
+import in.kuros.jfirebase.util.PropertyNamingStrategy;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -43,6 +44,10 @@ public interface EntityHelper {
         }
         return annotation;
     }
+
+    public PropertyNamingStrategy getPropertyNamingStrategy();
+
+    public void setPropertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy);
 
     EntityHelper INSTANCE = new EntityHelperImpl();
 }

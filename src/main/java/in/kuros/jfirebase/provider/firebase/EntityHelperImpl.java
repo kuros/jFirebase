@@ -14,6 +14,8 @@ import in.kuros.jfirebase.metadata.Value;
 import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
 
+import in.kuros.jfirebase.util.PropertyNamingStrategies;
+import in.kuros.jfirebase.util.PropertyNamingStrategy;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class EntityHelperImpl implements EntityHelper {
+    private PropertyNamingStrategy propertyNamingStrategy;
 
     @Override
     public <T> String getDocumentPath(final T entity) {
@@ -226,4 +229,14 @@ public class EntityHelperImpl implements EntityHelper {
         return beanMapper.getValue(entity, declaredField.getField()).toString();
     }
 
+    public PropertyNamingStrategy getPropertyNamingStrategy() {
+        if (Objects.isNull(propertyNamingStrategy)) {
+            return PropertyNamingStrategies.NONE;
+        }
+        return propertyNamingStrategy;
+    }
+
+    public void setPropertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy) {
+        this.propertyNamingStrategy = propertyNamingStrategy;
+    }
 }
