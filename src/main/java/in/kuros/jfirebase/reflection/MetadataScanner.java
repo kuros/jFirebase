@@ -8,13 +8,6 @@ import org.reflections.util.Utils;
 import org.reflections.vfs.Vfs;
 
 public  class MetadataScanner extends AbstractScanner {
-    private Class<?> loadClass(ClassFile clf) throws ClassNotFoundException {
-        try {
-            return Class.forName(clf.getName());
-        } catch (ClassNotFoundException e) {
-            return Thread.currentThread().getContextClassLoader().loadClass(clf.getName());
-        }
-    }
 
     public Object scan(Vfs.File file, Object classObject, Store store) {
         final ClassFile clf = (ClassFile) classObject;
@@ -30,5 +23,13 @@ public  class MetadataScanner extends AbstractScanner {
 
     @Override public void scan(Object classObject, Store store) {
         scan(null, classObject, store);
+    }
+
+    private Class<?> loadClass(ClassFile clf) throws ClassNotFoundException {
+        try {
+            return Class.forName(clf.getName());
+        } catch (ClassNotFoundException e) {
+            return Thread.currentThread().getContextClassLoader().loadClass(clf.getName());
+        }
     }
 }

@@ -14,6 +14,9 @@ import in.kuros.jfirebase.entity.TemporalType;
 import in.kuros.jfirebase.entity.Transient;
 import in.kuros.jfirebase.entity.UpdateTime;
 import in.kuros.jfirebase.provider.firebase.EntityHelper;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import lombok.Getter;
 import lombok.SneakyThrows;
 
@@ -92,7 +95,7 @@ public class BeanMapper<T> {
                 }
                 getters.put(propertyName, method);
 
-                final Field declaredField = clazz.getDeclaredField(propertyName);
+                final Field declaredField = getDeclaredField(clazz, propertyName);
                 declaredField.setAccessible(true);
                 if (declaredField.isAnnotationPresent(Transient.class) || Modifier.isTransient(declaredField.getModifiers())) {
                     transients.add(propertyName);
@@ -136,6 +139,16 @@ public class BeanMapper<T> {
                 }
 
                 if (declaredField.isAnnotationPresent(Temporal.class) && declaredField.getType() == Date.class) {
+                    final Temporal annotation = declaredField.getAnnotation(Temporal.class);
+                    temporals.put(propertyName, annotation);
+                }
+
+                if (declaredField.isAnnotationPresent(Temporal.class) && declaredField.getType() == LocalDate.class) {
+                    final Temporal annotation = declaredField.getAnnotation(Temporal.class);
+                    temporals.put(propertyName, annotation);
+                }
+
+                if (declaredField.isAnnotationPresent(Temporal.class) && declaredField.getType() == LocalDateTime.class) {
                     final Temporal annotation = declaredField.getAnnotation(Temporal.class);
                     temporals.put(propertyName, annotation);
                 }
@@ -187,6 +200,19 @@ public class BeanMapper<T> {
             // of fields/getters we don't want to serialize
             currentClass = currentClass.getSuperclass();
         } while (currentClass != null && !currentClass.equals(Object.class));
+    }
+
+    private Field getDeclaredField(Class<T> clazz, String propertyName)
+        throws NoSuchFieldException {
+        try {
+            return clazz.getDeclaredField(propertyName);
+        } catch (NoSuchFieldException e) {
+            Class superClass = clazz.getSuperclass();
+            if (superClass != null) {
+                return superClass.getDeclaredField(propertyName);
+            }
+            throw e;
+        }
     }
 
     public Optional<String> getId() {
@@ -266,6 +292,14 @@ public class BeanMapper<T> {
             final Temporal temporal = temporals.get(property);
             if (temporal.value() == TemporalType.DATE) {
                 propertyValue = DateUtil.getDateWithoutTime((Date) propertyValue);
+            }
+            if (temporal.value() == TemporalType.LOCAL_DATE) {
+                propertyValue = Date.from(((LocalDate) propertyValue).atStartOfDay()
+                    .atZone(ZoneOffset.UTC).toInstant());
+            }
+            if (temporal.value() == TemporalType.LOCAL_DATE_TIME) {
+                propertyValue = Date.from(((LocalDateTime) propertyValue)
+                    .atZone(ZoneOffset.UTC).toInstant());
             }
         }
         return propertyValue;
