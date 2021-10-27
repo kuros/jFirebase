@@ -28,7 +28,7 @@ public final class MetadataProcessor {
         try {
             final Reflections reflections = new Reflections(basePackage, new MetadataScanner());
 
-            final Set<String> classNames = reflections.getStore().keys(Utils.index(MetadataScanner.class));
+            final Set<String> classNames = reflections.getStore().values(Utils.index(MetadataScanner.class));
 
             for (String className : classNames) {
                 final Class<?> type = loadClass(className);
