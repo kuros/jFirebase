@@ -75,18 +75,37 @@ public class EntityHelperImpl implements EntityHelper {
     @Override
     @SuppressWarnings("unchecked")
     public <T> void setCreateTime(final T entity) {
-        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
-        beanMapper.getCreateTime()
-                .ifPresent(property -> beanMapper.setValue(entity, property, new Date()));
+        setCreateTime(entity, new Date());
     }
 
     @Override
     @SuppressWarnings("unchecked")
     public <T> boolean setUpdateTime(final T entity) {
+        return setUpdateTime(entity, new Date());
+    }
+
+    @Override public <T> boolean setCreateTime(T entity, Date date) {
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        final Optional<String> createTime = beanMapper.getCreateTime();
+        if (createTime.isPresent()) {
+            beanMapper.setValue(entity, createTime.get(), date);
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override public <T> Optional<Date> getCreateTime(T entity) {
+        final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
+        Optional<String> optional = beanMapper.getCreateTime();
+        return optional.map(s -> (Date) beanMapper.getValue(entity, s));
+    }
+
+    @Override public <T> boolean setUpdateTime(T entity, Date date) {
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
         final Optional<String> updateTime = beanMapper.getUpdateTime();
         if (updateTime.isPresent()) {
-            beanMapper.setValue(entity, updateTime.get(), new Date());
+            beanMapper.setValue(entity, updateTime.get(), date);
             return true;
         }
 
@@ -137,6 +156,11 @@ public class EntityHelperImpl implements EntityHelper {
     @Override
     public Optional<String> getUpdateTimeFieldName(final Class<?> type) {
         return ClassMapper.getBeanMapper(type).getUpdateTime();
+    }
+
+    @Override
+    public Optional<String> getCreateTimeFieldName(final Class<?> type) {
+        return ClassMapper.getBeanMapper(type).getCreateTime();
     }
 
     @SuppressWarnings("unchecked")

@@ -29,8 +29,10 @@ import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
 
 import in.kuros.jfirebase.util.PropertyNamingStrategy;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
@@ -80,6 +82,8 @@ class PersistenceServiceImpl implements PersistenceService {
         for (T entity : entities) {
             final DocumentReference documentReference = getDocumentReference(entity);
             final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
+            entityHelper.setUpdateTime(entity, new Date());
+            setCreateTimeOnUpdate(entity);
             batch.set(documentReference, beanMapper.serialize(entity), SetOptions.merge());
         }
 
@@ -90,12 +94,22 @@ class PersistenceServiceImpl implements PersistenceService {
         }
     }
 
+    private <T> void setCreateTimeOnUpdate(T entity) {
+        Optional<Date> createTimeOptional = entityHelper.getCreateTime(entity);
+        Optional<String> createTimeField = entityHelper.getCreateTimeFieldName(getClass(entity));
+        if (createTimeField.isPresent() && !createTimeOptional.isPresent()) {
+            entityHelper.setCreateTime(entity);
+        }
+    }
+
     @Override
     public <T> void set(final T entity, final Attribute<T, ?> attribute) {
         final DocumentReference documentReference = getDocumentReference(entity);
         final List<String> fields = Lists.newArrayList(attribute.getName());
 
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
+        entityHelper.setUpdateTime(entity, new Date());
+        setCreateTimeOnUpdate(entity);
         try {
             documentReference.set(beanMapper.serialize(entity), SetOptions.mergeFields(fields)).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -205,6 +219,10 @@ class PersistenceServiceImpl implements PersistenceService {
                     .map(document -> {
                         final T object = document.toObject(query.getResultType());
                         entityHelper.setId(object, document.getId());
+                        entityHelper.setUpdateTime(object, Objects.requireNonNull(
+                            document.getUpdateTime()).toDate());
+                        entityHelper.setCreateTime(object, Objects.requireNonNull(
+                            document.getCreateTime()).toDate());
                         return object;
                     })
                     .collect(Collectors.toList());
@@ -223,6 +241,10 @@ class PersistenceServiceImpl implements PersistenceService {
             return Optional.ofNullable(object)
                     .map(e -> {
                         entityHelper.setId(e, documentSnapshot.getId());
+                        entityHelper.setUpdateTime(e, Objects.requireNonNull(
+                            documentSnapshot.getUpdateTime()).toDate());
+                        entityHelper.setCreateTime(e, Objects.requireNonNull(
+                            documentSnapshot.getCreateTime()).toDate());
                         return e;
                     });
         } catch (final Exception e) {

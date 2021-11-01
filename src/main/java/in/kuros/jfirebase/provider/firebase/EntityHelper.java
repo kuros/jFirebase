@@ -5,6 +5,7 @@ import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 
 import in.kuros.jfirebase.util.PropertyNamingStrategy;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -25,7 +26,15 @@ public interface EntityHelper {
 
     <T> void setCreateTime(T entity);
 
+    <T> boolean setCreateTime(T entity, Date date);
+
+    <T> Optional<Date> getCreateTime(T entity);
+
+    Optional<String> getCreateTimeFieldName(Class<?> type);
+
     <T> boolean setUpdateTime(T entity);
+
+    <T> boolean setUpdateTime(T entity, Date date);
 
     Optional<String> getUpdateTimeFieldName(Class<?> type);
 
