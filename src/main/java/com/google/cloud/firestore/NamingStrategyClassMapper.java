@@ -37,10 +37,51 @@ public class NamingStrategyClassMapper extends CustomClassMapper {
     private static final ConcurrentMap<Class<?>, BeanMapper<?>>
             mappers = new ConcurrentHashMap<>();
 
+    private static void hardAssert(boolean assertion) {
+        hardAssert(assertion, "Internal inconsistency");
+    }
+
     private static void hardAssert(boolean assertion, String message) {
         if (!assertion) {
             throw new RuntimeException("Hard assert failed: " + message);
         }
+    }
+
+    /**
+     * Converts a Java representation of JSON data to standard library Java data types: Map, Array,
+     * String, Double, Integer and Boolean. POJOs are converted to Java Maps.
+     *
+     * @param object The representation of the JSON data
+     * @return JSON representation containing only standard library Java types
+     */
+    static Object convertToPlainJavaTypes(Object object) {
+        return serialize(object);
+    }
+
+    public static Map<String, Object> convertToPlainJavaTypes(Map<?, Object> update) {
+        Object converted = serialize(update);
+        hardAssert(converted instanceof Map);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> convertedMap = (Map<String, Object>) converted;
+        return convertedMap;
+    }
+
+    /**
+     * Converts a standard library Java representation of JSON data to an object of the provided
+     * class.
+     *
+     * @param object The representation of the JSON data
+     * @param clazz  The class of the object to convert to
+     * @param docRef The value to set to {@link DocumentId} annotated fields in the custom class.
+     * @return The POJO object.
+     */
+    static <T> T convertToCustomClass(Object object, Class<T> clazz, DocumentReference docRef) {
+        return deserializeToClass(object, clazz, new NamingStrategyClassMapper.DeserializeContext(
+                NamingStrategyClassMapper.ErrorPath.EMPTY, docRef));
+    }
+
+    static <T> Object serialize(T o) {
+        return serialize(o, NamingStrategyClassMapper.ErrorPath.EMPTY);
     }
 
     @SuppressWarnings("unchecked")
