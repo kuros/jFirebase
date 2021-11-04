@@ -2,38 +2,21 @@ package in.kuros.jfirebase.provider.firebase;
 
 
 import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.CollectionReference;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.FieldPath;
-import com.google.cloud.firestore.FieldValue;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QueryDocumentSnapshot;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.cloud.firestore.SetOptions;
+import com.google.cloud.firestore.*;
 import com.google.common.collect.Lists;
 import in.kuros.jfirebase.PersistenceService;
 import in.kuros.jfirebase.exception.PersistenceException;
-import in.kuros.jfirebase.metadata.Attribute;
-import in.kuros.jfirebase.metadata.AttributeValue;
-import in.kuros.jfirebase.metadata.RemoveAttribute;
-import in.kuros.jfirebase.metadata.SetAttribute;
+import in.kuros.jfirebase.metadata.*;
 import in.kuros.jfirebase.metadata.SetAttribute.Helper;
-import in.kuros.jfirebase.metadata.UpdateAttribute;
-import in.kuros.jfirebase.metadata.ValuePath;
 import in.kuros.jfirebase.provider.firebase.query.QueryBuilder;
 import in.kuros.jfirebase.query.Query;
 import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
 import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
-
 import in.kuros.jfirebase.util.PropertyNamingStrategy;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -217,12 +200,12 @@ class PersistenceServiceImpl implements PersistenceService {
             return documents
                     .stream()
                     .map(document -> {
-                        final T object = document.toObject(query.getResultType());
+                        final T object = ClassMapperHelper.toObject(query.getResultType(), document);
                         entityHelper.setId(object, document.getId());
                         entityHelper.setUpdateTime(object, Objects.requireNonNull(
-                            document.getUpdateTime()).toDate());
+                                document.getUpdateTime()).toDate());
                         entityHelper.setCreateTime(object, Objects.requireNonNull(
-                            document.getCreateTime()).toDate());
+                                document.getCreateTime()).toDate());
                         return object;
                     })
                     .collect(Collectors.toList());
@@ -237,14 +220,14 @@ class PersistenceServiceImpl implements PersistenceService {
             final QueryBuilder<T> queryBuilder = (QueryBuilder<T>) query;
             final DocumentReference document = firestore.document(queryBuilder.getPath());
             final DocumentSnapshot documentSnapshot = document.get().get();
-            final T object = documentSnapshot.toObject(queryBuilder.getResultType());
+            final T object = ClassMapperHelper.toObject(queryBuilder.getResultType(), documentSnapshot);
             return Optional.ofNullable(object)
                     .map(e -> {
                         entityHelper.setId(e, documentSnapshot.getId());
                         entityHelper.setUpdateTime(e, Objects.requireNonNull(
-                            documentSnapshot.getUpdateTime()).toDate());
+                                documentSnapshot.getUpdateTime()).toDate());
                         entityHelper.setCreateTime(e, Objects.requireNonNull(
-                            documentSnapshot.getCreateTime()).toDate());
+                                documentSnapshot.getCreateTime()).toDate());
                         return e;
                     });
         } catch (final Exception e) {
