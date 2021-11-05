@@ -1,9 +1,11 @@
 package in.kuros.jfirebase.provider.firebase.query;
 
+import com.google.cloud.firestore.DocumentSnapshot;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.MapAttribute;
 import in.kuros.jfirebase.query.Query;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -215,6 +217,12 @@ abstract class QueryImpl<T> implements Query<T> {
     @Override
     public Query<T> startAfter(final Object... values) {
         queries.add(query -> query.startAfter(values));
+        return this;
+    }
+
+    @Override
+    public Query<T> startAfter(@Nonnull final DocumentSnapshot snapshot) {
+        queries.add(query -> query.startAfter(snapshot));
         return this;
     }
 

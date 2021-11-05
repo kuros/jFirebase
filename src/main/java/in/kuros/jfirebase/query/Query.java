@@ -1,6 +1,7 @@
 package in.kuros.jfirebase.query;
 
 
+import com.google.cloud.firestore.DocumentSnapshot;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.MapAttribute;
 
@@ -73,6 +74,8 @@ public interface Query<T> {
     Query<T> select(String... fields);
 
     Query<T> startAfter(Object... values);
+
+    Query<T> startAfter(DocumentSnapshot snapshot);
 
     Query<T> startAt(Object... values);
 

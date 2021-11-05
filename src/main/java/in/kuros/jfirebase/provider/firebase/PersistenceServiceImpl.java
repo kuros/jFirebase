@@ -237,6 +237,18 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
+    public <T> Optional<DocumentSnapshot> findSnapshotById(Query<T> query) {
+        try {
+            final QueryBuilder<T> queryBuilder = (QueryBuilder<T>) query;
+            final DocumentReference document = firestore.document(queryBuilder.getPath());
+            final DocumentSnapshot documentSnapshot = document.get().get();
+            return Objects.isNull(documentSnapshot.getData()) ? Optional.empty() : Optional.of(documentSnapshot);
+        } catch (final Exception e) {
+            throw new PersistenceException(e);
+        }
+    }
+
+    @Override
     public <T> T runTransaction(final Function<Transaction, T> transactionConsumer) {
         try {
             return firestore

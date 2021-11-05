@@ -1,8 +1,8 @@
 package in.kuros.jfirebase;
 
 
+import com.google.cloud.firestore.DocumentSnapshot;
 import in.kuros.jfirebase.metadata.Attribute;
-import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
 import in.kuros.jfirebase.metadata.UpdateAttribute;
@@ -38,9 +38,12 @@ public interface PersistenceService {
 
     <T> Optional<T> findById(Query<T> queryBuilder);
 
+    <T> Optional<DocumentSnapshot> findSnapshotById(Query<T> queryBuilder);
+
     <T> T runTransaction(Function<Transaction, T> transactionConsumer);
 
     void writeInBatch(Consumer<WriteBatch> batchConsumer);
 
-    static void init(){}
+    static void init() {
+    }
 }
