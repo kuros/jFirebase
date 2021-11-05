@@ -1,5 +1,7 @@
-package com.google.cloud.firestore;
+package in.kuros.jfirebase.util;
 
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nonnull;

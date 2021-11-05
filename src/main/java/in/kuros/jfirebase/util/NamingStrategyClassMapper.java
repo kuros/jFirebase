@@ -1,8 +1,12 @@
-package com.google.cloud.firestore;
+package in.kuros.jfirebase.util;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.cloud.Timestamp;
+import com.google.cloud.firestore.Blob;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.FieldValue;
+import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.annotation.*;
 import com.google.firestore.v1.Value;
 import org.apache.http.util.TextUtils;
@@ -16,15 +20,18 @@ import java.util.logging.Logger;
 
 /**
  * Helper class to convert to/from custom POJO classes and plain Java types.
- *
+ * <p>
  * This class is extended copy of Google's class mapper, with support for dynamic sub types
  * using JsonSubType annotation.
- *
+ * <p>
  * TODO add naming strategy support
  * TODO create custom annotation
  * TODO combine with util.BeanMapper
  */
-public class NamingStrategyClassMapper extends CustomClassMapper {
+public class NamingStrategyClassMapper {
+
+    private NamingStrategyClassMapper() {
+    }
 
     private static final Logger
             LOGGER = Logger.getLogger(NamingStrategyClassMapper.class.getName());

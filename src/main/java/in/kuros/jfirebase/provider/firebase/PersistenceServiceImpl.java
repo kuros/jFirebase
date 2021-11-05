@@ -14,6 +14,7 @@ import in.kuros.jfirebase.transaction.Transaction;
 import in.kuros.jfirebase.transaction.WriteBatch;
 import in.kuros.jfirebase.util.BeanMapper;
 import in.kuros.jfirebase.util.ClassMapper;
+import in.kuros.jfirebase.util.ClassMapperHelper;
 import in.kuros.jfirebase.util.PropertyNamingStrategy;
 
 import java.util.*;
