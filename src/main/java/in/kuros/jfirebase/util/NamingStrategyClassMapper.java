@@ -682,7 +682,7 @@ public class NamingStrategyClassMapper {
 
             // Make sure we can write to @DocumentId annotated properties before proceeding.
             for (String docIdProperty : documentIdPropertyNames) {
-                if (!setters.containsKey(docIdProperty) && !fields.containsKey(docIdProperty)) {
+                if (!isSettersContainsKey(clazz, docIdProperty) && !fields.containsKey(docIdProperty)) {
                     throw new RuntimeException(
                             "@DocumentId is annotated on property "
                                     + docIdProperty
@@ -730,7 +730,7 @@ public class NamingStrategyClassMapper {
             Class currentClass = clazz;
             do {
                 // Add any setters
-                for (Method method : clazz.getDeclaredMethods()) {
+                for (Method method : clazz.getMethods()) {
                     if (shouldIncludeSetter(method) && fieldNotFinal(method, clazz)) {
                         String propertyName = propertyName(method);
 
@@ -743,10 +743,10 @@ public class NamingStrategyClassMapper {
                                                 + " with invalid case-sensitive name: "
                                                 + method.getName());
                             } else {
-                                Method existingSetter = setters.get(propertyName);
+                                Method existingSetter = getExistingSetter(currentClass, propertyName);
                                 if (existingSetter == null) {
                                     method.setAccessible(true);
-                                    setters.put(propertyName, method);
+                                    putSetter(clazz, propertyName, method);
                                     applySetterAnnotations(method);
                                 } else if (!isSetterOverride(method, existingSetter)) {
                                     // We require that setters with conflicting property names are
@@ -797,6 +797,18 @@ public class NamingStrategyClassMapper {
             } while (currentClass != null && !currentClass.equals(Object.class));
         }
 
+        private void putSetter(Class<?> clazz, String propertyName, Method method) {
+            setters.put(genSetterKey(clazz, propertyName), method);
+        }
+
+        private String genSetterKey(Class<?> clazz, String propertyName) {
+            return clazz.getName() + "." + propertyName;
+        }
+
+        private Method getExistingSetter(Class<?> clazz, String propertyName) {
+            return setters.get(genSetterKey(clazz, propertyName));
+        }
+
         private boolean fieldNotFinal(Method method, Class<T> clazz) {
             String propertyName = propertyName(method);
             try {
@@ -841,8 +853,8 @@ public class NamingStrategyClassMapper {
             for (Map.Entry<String, Object> entry : values.entrySet()) {
                 String propertyName = entry.getKey();
                 NamingStrategyClassMapper.ErrorPath childPath = context.errorPath.child(propertyName);
-                if (setters.containsKey(propertyName)) {
-                    Method setter = setters.get(propertyName);
+                if (isSettersContainsKey(instance.getClass(), propertyName)) {
+                    Method setter = getExistingSetter(instance.getClass(), propertyName);
                     Type[] params = setter.getGenericParameterTypes();
                     if (params.length != 1) {
                         throw deserializeError(childPath, "Setter does not have exactly one parameter");
@@ -885,6 +897,10 @@ public class NamingStrategyClassMapper {
             populateDocumentIdProperties(types, context, instance, deserialzedProperties);
 
             return instance;
+        }
+
+        private boolean isSettersContainsKey(Class<?> aClass, String propertyName) {
+            return setters.containsKey(genSetterKey(aClass, propertyName));
         }
 
         private T getInstance(Map<String, Object> values) {
@@ -947,8 +963,8 @@ public class NamingStrategyClassMapper {
                     throw new RuntimeException(message);
                 }
                 NamingStrategyClassMapper.ErrorPath childPath = context.errorPath.child(docIdPropertyName);
-                if (setters.containsKey(docIdPropertyName)) {
-                    Method setter = setters.get(docIdPropertyName);
+                if (isSettersContainsKey(instance.getClass(), docIdPropertyName)) {
+                    Method setter = getExistingSetter(instance.getClass(), docIdPropertyName);
                     Type[] params = setter.getGenericParameterTypes();
                     if (params.length != 1) {
                         throw deserializeError(childPath, "Setter does not have exactly one parameter");
