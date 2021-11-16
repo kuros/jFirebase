@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class EntityHelperImpl implements EntityHelper {
     private PropertyNamingStrategy propertyNamingStrategy;
+    private String collectionNamePrefix = "";
 
     @Override
     public <T> String getDocumentPath(final T entity) {
@@ -118,6 +119,7 @@ public class EntityHelperImpl implements EntityHelper {
         addParentPath(entity, stringBuilder);
 
         final Entity annotation = EntityHelper.getEntity(entity.getClass());
+        stringBuilder.append(collectionNamePrefix);
         stringBuilder.append(annotation.value());
         return stringBuilder;
     }
@@ -174,6 +176,11 @@ public class EntityHelperImpl implements EntityHelper {
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
+    }
+
+    @Override
+    public String getMappedCollection(Class<?> aClass) {
+        return collectionNamePrefix + EntityHelper.getEntity(aClass).value();
     }
 
     @Override
@@ -262,5 +269,10 @@ public class EntityHelperImpl implements EntityHelper {
 
     public void setPropertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy) {
         this.propertyNamingStrategy = propertyNamingStrategy;
+    }
+
+    @Override
+    public void setCollectionNamePrefix(String collectionNamePrefix) {
+        this.collectionNamePrefix = collectionNamePrefix;
     }
 }

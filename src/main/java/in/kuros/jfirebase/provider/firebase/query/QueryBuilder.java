@@ -78,6 +78,6 @@ public final class QueryBuilder<T> extends QueryImpl<T> {
     }
 
     private static String getCollectionName(final Class<?> type) {
-        return EntityHelper.getMappedCollection(type);
+        return EntityHelper.INSTANCE.getMappedCollection(type);
     }
 }

@@ -164,7 +164,7 @@ class EntityHelperImplTest {
 
     @Test
     void shouldGetMappedCollection() {
-        final String mappedCollection = EntityHelper.getMappedCollection(EntityObject.class);
+        final String mappedCollection = EntityHelper.INSTANCE.getMappedCollection(EntityObject.class);
         Assertions.assertEquals("obj", mappedCollection);
     }
 

@@ -40,6 +40,11 @@ class PersistenceServiceImpl implements PersistenceService {
         this.entityHelper.setPropertyNamingStrategy(namingStrategy);
     }
 
+    public PersistenceServiceImpl(Firestore firestore, PropertyNamingStrategy namingStrategy, String entityPrefix) {
+        this(firestore, namingStrategy);
+        this.entityHelper.setCollectionNamePrefix(entityPrefix);
+    }
+
     @Override
     public <T> T create(final T entity) {
 

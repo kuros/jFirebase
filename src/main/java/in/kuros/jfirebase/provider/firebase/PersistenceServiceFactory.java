@@ -21,4 +21,11 @@ public final class PersistenceServiceFactory {
         return persistenceService;
     }
 
+    public static PersistenceService create(final Firestore firestore, String collectionNamePrefix, PropertyNamingStrategy namingStrategy, final String... basePackages) {
+        MetadataProcessor.init(basePackages);
+        final PersistenceServiceImpl persistenceService = new PersistenceServiceImpl(firestore, namingStrategy, collectionNamePrefix);
+        PersistenceService.init();
+        return persistenceService;
+    }
+
 }

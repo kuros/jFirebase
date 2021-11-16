@@ -42,9 +42,7 @@ public interface EntityHelper {
 
     <T> void validateIdsNotNull(T object);
 
-    static String getMappedCollection(final Class<?> aClass) {
-        return getEntity(aClass).value();
-    }
+    String getMappedCollection(final Class<?> aClass);
 
     static Entity getEntity(final Class<?> aClass) {
         final Entity annotation = aClass.getAnnotation(Entity.class);
@@ -59,4 +57,6 @@ public interface EntityHelper {
     public void setPropertyNamingStrategy(PropertyNamingStrategy propertyNamingStrategy);
 
     EntityHelper INSTANCE = new EntityHelperImpl();
+
+    void setCollectionNamePrefix(String collectionNamePrefix);
 }
