@@ -3,7 +3,9 @@ package in.kuros.jfirebase.provider.firebase.query;
 import com.google.cloud.firestore.DocumentSnapshot;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.MapAttribute;
+import in.kuros.jfirebase.provider.firebase.EntityHelper;
 import in.kuros.jfirebase.query.Query;
+import in.kuros.jfirebase.util.PropertyNamingStrategy;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -16,21 +18,23 @@ import static com.google.cloud.firestore.Query.Direction.DESCENDING;
 
 abstract class QueryImpl<T> implements Query<T> {
 
+    private final PropertyNamingStrategy namingStrategy;
     private List<Function<com.google.cloud.firestore.Query, com.google.cloud.firestore.Query>> queries;
 
     QueryImpl() {
         this.queries = new ArrayList<>();
+        this.namingStrategy = EntityHelper.INSTANCE.getPropertyNamingStrategy();
     }
 
     @Override
     public <X> Query<T> whereEqualTo(final Attribute<T, X> field, final X value) {
-        whereEqualTo(field.getName(), value);
+        whereEqualTo(getNameWithStrategy(field), value);
         return this;
     }
 
     @Override
     public <K, V> Query<T> whereEqualTo(final MapAttribute<T, K, V> field, final K key, final V value) {
-        return whereEqualTo(field.getName() + "." + key, value);
+        return whereEqualTo(getNameWithStrategy(field) + "." + key, value);
     }
 
     @Override
@@ -41,13 +45,13 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereNotEqualTo(final Attribute<T, X> field, final X value) {
-        whereNotEqualTo(field.getName(), value);
+        whereNotEqualTo(getNameWithStrategy(field), value);
         return this;
     }
 
     @Override
     public <K, V> Query<T> whereNotEqualTo(final MapAttribute<T, K, V> field, final K key, final V value) {
-        return whereNotEqualTo(field.getName() + "." + key, value);
+        return whereNotEqualTo(getNameWithStrategy(field) + "." + key, value);
     }
 
     @Override
@@ -58,7 +62,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereGreaterThan(final Attribute<T, X> field, final X value) {
-        whereGreaterThan(field.getName(), value);
+        whereGreaterThan(getNameWithStrategy(field), value);
         return this;
     }
 
@@ -70,7 +74,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereGreaterThanOrEqualTo(final Attribute<T, X> field, final X value) {
-        whereGreaterThanOrEqualTo(field.getName(), value);
+        whereGreaterThanOrEqualTo(getNameWithStrategy(field), value);
         return this;
     }
 
@@ -82,7 +86,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereLessThan(final Attribute<T, X> field, final X value) {
-        whereLessThan(field.getName(), value);
+        whereLessThan(getNameWithStrategy(field), value);
         return this;
     }
 
@@ -94,7 +98,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereLessThanOrEqualTo(final Attribute<T, X> field, final X value) {
-        whereLessThanOrEqualTo(field.getName(), value);
+        whereLessThanOrEqualTo(getNameWithStrategy(field), value);
         return this;
     }
 
@@ -106,7 +110,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereArrayContains(final Attribute<T, X> field, final Object value) {
-        whereArrayContains(field.getName(), value);
+        whereArrayContains(getNameWithStrategy(field), value);
         return this;
     }
 
@@ -118,7 +122,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereArrayContainsAny(final Attribute<T, X> field, final List<Object> values) {
-        whereArrayContainsAny(field.getName(), values);
+        whereArrayContainsAny(getNameWithStrategy(field), values);
         return this;
     }
 
@@ -130,7 +134,7 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereIn(final Attribute<T, X> field, final List<X> values) {
-        whereIn(field.getName(), values);
+        whereIn(getNameWithStrategy(field), values);
         return this;
     }
 
@@ -142,8 +146,12 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> whereNotIn(final Attribute<T, X> field, final List<X> values) {
-        whereNotIn(field.getName(), values);
+        whereNotIn(getNameWithStrategy(field), values);
         return this;
+    }
+
+    private <X> String getNameWithStrategy(Attribute<T, X> field) {
+        return namingStrategy.translate(field.getName());
     }
 
     @Override
@@ -178,13 +186,13 @@ abstract class QueryImpl<T> implements Query<T> {
 
     @Override
     public <X> Query<T> orderBy(final Attribute<T, X> attribute) {
-        queries.add(query -> query.orderBy(attribute.getName()));
+        queries.add(query -> query.orderBy(getNameWithStrategy(attribute)));
         return this;
     }
 
     @Override
     public <X> Query<T> orderByDesc(final Attribute<T, X> attribute) {
-        queries.add(query -> query.orderBy(attribute.getName(), DESCENDING));
+        queries.add(query -> query.orderBy(getNameWithStrategy(attribute), DESCENDING));
         return this;
     }
 

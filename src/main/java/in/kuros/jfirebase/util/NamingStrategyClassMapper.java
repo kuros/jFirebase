@@ -9,6 +9,7 @@ import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.GeoPoint;
 import com.google.cloud.firestore.annotation.*;
 import com.google.firestore.v1.Value;
+import in.kuros.jfirebase.provider.firebase.EntityHelper;
 import org.apache.http.util.TextUtils;
 
 import java.lang.reflect.*;
@@ -847,11 +848,13 @@ public class NamingStrategyClassMapper {
                                 + "sure these constructors are not stripped");
             }
 
+            PropertyNamingStrategy namingStrategy = EntityHelper.INSTANCE.getPropertyNamingStrategy();
             T instance = getInstance(values);
 
             HashSet<String> deserialzedProperties = new HashSet<>();
             for (Map.Entry<String, Object> entry : values.entrySet()) {
-                String propertyName = entry.getKey();
+                String rawPropertyName = entry.getKey();
+                String propertyName = EntityHelper.INSTANCE.getPropertyNamingStrategy().translate(rawPropertyName);
                 NamingStrategyClassMapper.ErrorPath childPath = context.errorPath.child(propertyName);
                 if (isSettersContainsKey(instance.getClass(), propertyName)) {
                     Method setter = getExistingSetter(instance.getClass(), propertyName);
@@ -1232,12 +1235,14 @@ public class NamingStrategyClassMapper {
 
         private static String propertyName(Field field) {
             String annotatedName = annotatedName(field);
-            return annotatedName != null ? annotatedName : field.getName();
+            String rawName = annotatedName != null ? annotatedName : field.getName();
+            return EntityHelper.INSTANCE.getPropertyNamingStrategy().translate(rawName);
         }
 
         private static String propertyName(Method method) {
             String annotatedName = annotatedName(method);
-            return annotatedName != null ? annotatedName : serializedName(method.getName());
+            String rawName = annotatedName != null ? annotatedName : serializedName(method.getName());
+            return EntityHelper.INSTANCE.getPropertyNamingStrategy().translate(rawName);
         }
 
         private static String annotatedName(AccessibleObject obj) {

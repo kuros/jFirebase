@@ -13,5 +13,5 @@ public abstract class PropertyNamingStrategy implements Serializable {
   protected PropertyNamingStrategy() {
   }
 
-  abstract String translate(String input);
+  public abstract String translate(String input);
 }
