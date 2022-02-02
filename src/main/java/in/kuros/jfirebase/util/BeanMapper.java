@@ -292,12 +292,10 @@ public class BeanMapper<T> {
             final Temporal temporal = temporals.get(property);
             if (temporal.value() == TemporalType.DATE) {
                 propertyValue = DateUtil.getDateWithoutTime((Date) propertyValue);
-            }
-            if (temporal.value() == TemporalType.LOCAL_DATE) {
+            } else if (temporal.value() == TemporalType.LOCAL_DATE) {
                 propertyValue = Date.from(((LocalDate) propertyValue).atStartOfDay()
                     .atZone(ZoneOffset.UTC).toInstant());
-            }
-            if (temporal.value() == TemporalType.LOCAL_DATE_TIME) {
+            } else if (temporal.value() == TemporalType.LOCAL_DATE_TIME) {
                 propertyValue = Date.from(((LocalDateTime) propertyValue)
                     .atZone(ZoneOffset.UTC).toInstant());
             }
