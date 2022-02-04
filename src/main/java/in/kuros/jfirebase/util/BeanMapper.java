@@ -275,12 +275,7 @@ public class BeanMapper<T> {
                 }
             }
 
-            Object serializedValue;
-            if (updateTime != null && updateTime.equals(property)) {
-                serializedValue = FieldValue.serverTimestamp();
-            } else {
-                serializedValue = ClassMapper.serialize(propertyValue);
-            }
+            Object serializedValue = ClassMapper.serialize(propertyValue);
             String fieldName = namingStrategy.translate(property);
             result.put(fieldName, serializedValue);
         }

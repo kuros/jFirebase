@@ -12,7 +12,7 @@
 
     <groupId>in.kuros</groupId>
     <artifactId>jFirebase</artifactId>
-    <version>1.2.1</version>
+    <version>1.2.2</version>
 
 
     <description>This project aims at building a wrapper over nosql technologies - Firebase</description>
@@ -54,7 +54,7 @@
     <properties>
         <guava.version>25.1-jre</guava.version>
         <firebase-admin.version>7.1.1</firebase-admin.version>
-        <lombok.version>1.18.10</lombok.version>
+        <lombok.version>1.18.22</lombok.version>
         <surefire.version>2.17</surefire.version>
         <coveralls-maven-plugin.version>4.3.0</coveralls-maven-plugin.version>
         <maven-source-plugin.version>2.1.2</maven-source-plugin.version>
@@ -160,7 +160,7 @@
                 <version>${surefire.version}</version>
                 <configuration>
                     <testNGArtifactName>none:none</testNGArtifactName>
-                    <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+                    <argLine>-Xmx1024m</argLine>
                 </configuration>
             </plugin>
             <plugin>

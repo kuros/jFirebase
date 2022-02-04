@@ -52,7 +52,9 @@ class PersistenceServiceImpl implements PersistenceService {
             final CollectionReference collectionReference = getCollectionReference(entity);
             final String id = entityHelper.getId(entity);
             final DocumentReference documentReference = id == null ? collectionReference.document() : collectionReference.document(id);
-            entityHelper.setCreateTime(entity);
+            Date date = new Date();
+            entityHelper.setCreateTime(entity, date);
+            entityHelper.setUpdateTime(entity, date);
 
             final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
             documentReference.create(beanMapper.serialize(entity)).get();
@@ -71,8 +73,9 @@ class PersistenceServiceImpl implements PersistenceService {
         for (T entity : entities) {
             final DocumentReference documentReference = getDocumentReference(entity);
             final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
-            entityHelper.setUpdateTime(entity, new Date());
-            setCreateTimeOnUpdate(entity);
+            Date date = new Date();
+            entityHelper.setUpdateTime(entity, date);
+            setCreateTimeOnUpdate(entity, date);
             batch.set(documentReference, beanMapper.serialize(entity), SetOptions.merge());
         }
 
@@ -83,11 +86,17 @@ class PersistenceServiceImpl implements PersistenceService {
         }
     }
 
-    private <T> void setCreateTimeOnUpdate(T entity) {
+    /**
+     * Set create time if document is created with set() method
+     * @param entity
+     * @param date
+     * @param <T>
+     */
+    private <T> void setCreateTimeOnUpdate(T entity, Date date) {
         Optional<Date> createTimeOptional = entityHelper.getCreateTime(entity);
         Optional<String> createTimeField = entityHelper.getCreateTimeFieldName(getClass(entity));
         if (createTimeField.isPresent() && !createTimeOptional.isPresent()) {
-            entityHelper.setCreateTime(entity);
+            entityHelper.setCreateTime(entity, date);
         }
     }
 
@@ -97,8 +106,9 @@ class PersistenceServiceImpl implements PersistenceService {
         final List<String> fields = Lists.newArrayList(attribute.getName());
 
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper(getClass(entity));
-        entityHelper.setUpdateTime(entity, new Date());
-        setCreateTimeOnUpdate(entity);
+        Date date = new Date();
+        entityHelper.setUpdateTime(entity, date);
+        setCreateTimeOnUpdate(entity, date);
         try {
             documentReference.set(beanMapper.serialize(entity), SetOptions.mergeFields(fields)).get();
         } catch (InterruptedException | ExecutionException e) {
@@ -208,10 +218,6 @@ class PersistenceServiceImpl implements PersistenceService {
                     .map(document -> {
                         final T object = ClassMapperHelper.toObject(query.getResultType(), document);
                         entityHelper.setId(object, document.getId());
-                        entityHelper.setUpdateTime(object, Objects.requireNonNull(
-                                document.getUpdateTime()).toDate());
-                        entityHelper.setCreateTime(object, Objects.requireNonNull(
-                                document.getCreateTime()).toDate());
                         return object;
                     })
                     .collect(Collectors.toList());
@@ -230,10 +236,6 @@ class PersistenceServiceImpl implements PersistenceService {
             return Optional.ofNullable(object)
                     .map(e -> {
                         entityHelper.setId(e, documentSnapshot.getId());
-                        entityHelper.setUpdateTime(e, Objects.requireNonNull(
-                                documentSnapshot.getUpdateTime()).toDate());
-                        entityHelper.setCreateTime(e, Objects.requireNonNull(
-                                documentSnapshot.getCreateTime()).toDate());
                         return e;
                     });
         } catch (final Exception e) {
