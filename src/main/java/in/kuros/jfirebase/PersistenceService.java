@@ -2,6 +2,7 @@ package in.kuros.jfirebase;
 
 
 import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.WriteResult;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.RemoveAttribute;
 import in.kuros.jfirebase.metadata.SetAttribute;
@@ -20,19 +21,19 @@ public interface PersistenceService {
 
     <T> T create(T entity);
 
-    <T> void set(T... entities);
+    <T> List<WriteResult> set(T... entities);
 
-    <T> void set(T entity, Attribute<T, ?> attribute);
+    <T> WriteResult set(T entity, Attribute<T, ?> attribute);
 
-    <T> void set(SetAttribute<T> setAttribute);
+    <T> WriteResult set(SetAttribute<T> setAttribute);
 
-    <T> void remove(RemoveAttribute<T> removeAttribute);
+    <T> WriteResult remove(RemoveAttribute<T> removeAttribute);
 
-    <T> void update(final UpdateAttribute<T> updateAttribute);
+    <T> WriteResult update(final UpdateAttribute<T> updateAttribute);
 
-    void updateFields(String path, String field, Object value);
+    WriteResult updateFields(String path, String field, Object value);
 
-    <T> void delete(T... entities);
+    <T> List<WriteResult> delete(T... entities);
 
     <T> List<T> find(Query<T> queryBuilder);
 
@@ -42,7 +43,7 @@ public interface PersistenceService {
 
     <T> T runTransaction(Function<Transaction, T> transactionConsumer);
 
-    void writeInBatch(Consumer<WriteBatch> batchConsumer);
+    List<WriteResult> writeInBatch(Consumer<WriteBatch> batchConsumer);
 
     static void init() {
     }

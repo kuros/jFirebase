@@ -67,7 +67,7 @@ class PersistenceServiceImpl implements PersistenceService {
 
     @SafeVarargs
     @Override
-    public final <T> void set(final T... entities) {
+    public final <T> List<WriteResult> set(final T... entities) {
         final com.google.cloud.firestore.WriteBatch batch = firestore.batch();
 
         for (T entity : entities) {
@@ -80,7 +80,7 @@ class PersistenceServiceImpl implements PersistenceService {
         }
 
         try {
-            batch.commit().get();
+            return batch.commit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw new PersistenceException(e);
         }
@@ -101,7 +101,7 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
-    public <T> void set(final T entity, final Attribute<T, ?> attribute) {
+    public <T> WriteResult set(final T entity, final Attribute<T, ?> attribute) {
         final DocumentReference documentReference = getDocumentReference(entity);
         final List<String> fields = Lists.newArrayList(attribute.getName());
 
@@ -110,14 +110,14 @@ class PersistenceServiceImpl implements PersistenceService {
         entityHelper.setUpdateTime(entity, date);
         setCreateTimeOnUpdate(entity, date);
         try {
-            documentReference.set(beanMapper.serialize(entity), SetOptions.mergeFields(fields)).get();
+            return documentReference.set(beanMapper.serialize(entity), SetOptions.mergeFields(fields)).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new PersistenceException(e);
         }
     }
 
     @Override
-    public <T> void set(final SetAttribute<T> setAttribute) {
+    public <T> WriteResult set(final SetAttribute<T> setAttribute) {
         try {
             final Class<T> declaringClass = Helper.getDeclaringClass(setAttribute);
             final List<AttributeValue<T, ?>> keyAttributes = SetAttribute.Helper.getKeys(setAttribute);
@@ -139,7 +139,7 @@ class PersistenceServiceImpl implements PersistenceService {
 
             final String documentPath = entityHelper.getDocumentPath(keyAttributes);
             final DocumentReference documentReference = firestore.document(documentPath);
-            documentReference.set(updateMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
+            return documentReference.set(updateMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
 
         } catch (final Exception e) {
             throw new PersistenceException(e);
@@ -147,7 +147,7 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
-    public <T> void remove(final RemoveAttribute<T> removeAttribute) {
+    public <T> WriteResult remove(final RemoveAttribute<T> removeAttribute) {
         try {
             final List<AttributeValue<T, ?>> attributeValues = RemoveAttribute.Helper.getAttributeValues(removeAttribute, FieldValue::delete);
             final List<ValuePath<?>> valuePaths = RemoveAttribute.Helper.getValuePaths(removeAttribute);
@@ -158,13 +158,13 @@ class PersistenceServiceImpl implements PersistenceService {
             fieldPaths.addAll(valueFieldPaths);
             final String documentPath = entityHelper.getDocumentPath(RemoveAttribute.Helper.getKeys(removeAttribute));
             final DocumentReference documentReference = firestore.document(documentPath);
-            documentReference.set(valueMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
+            return documentReference.set(valueMap, SetOptions.mergeFieldPaths(fieldPaths)).get();
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
     }
 
-    public <T> void update(final UpdateAttribute<T> updateAttribute) {
+    public <T> WriteResult update(final UpdateAttribute<T> updateAttribute) {
         try {
             final Map<String, Object> valueMap = attributeValueHelper.convertToObjectMap(UpdateAttribute.Helper.getAttributeValues(updateAttribute));
             attributeValueHelper.addValuePaths(valueMap, UpdateAttribute.Helper.getValuePaths(updateAttribute));
@@ -173,16 +173,16 @@ class PersistenceServiceImpl implements PersistenceService {
 
             final String documentPath = entityHelper.getDocumentPath(UpdateAttribute.Helper.getKeys(updateAttribute));
             final DocumentReference documentReference = firestore.document(documentPath);
-            documentReference.update(valueMap).get();
+            return documentReference.update(valueMap).get();
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
     }
 
     @Override
-    public void updateFields(final String path, final String field, final Object value) {
+    public WriteResult updateFields(final String path, final String field, final Object value) {
         try {
-            firestore.document(path).update(field, value).get();
+            return firestore.document(path).update(field, value).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new PersistenceException(e);
         }
@@ -190,7 +190,7 @@ class PersistenceServiceImpl implements PersistenceService {
 
     @Override
     @SafeVarargs
-    public final <T> void delete(final T... entities) {
+    public final <T> List<WriteResult> delete(final T... entities) {
 
         final com.google.cloud.firestore.WriteBatch batch = firestore.batch();
 
@@ -200,7 +200,7 @@ class PersistenceServiceImpl implements PersistenceService {
         }
 
         try {
-            batch.commit().get();
+            return batch.commit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw new PersistenceException(e);
         }
@@ -267,12 +267,12 @@ class PersistenceServiceImpl implements PersistenceService {
     }
 
     @Override
-    public void writeInBatch(final Consumer<WriteBatch> batchConsumer) {
+    public List<WriteResult> writeInBatch(final Consumer<WriteBatch> batchConsumer) {
         try {
             final com.google.cloud.firestore.WriteBatch batch = firestore.batch();
             final WriteBatchImpl writeBatch = new WriteBatchImpl(firestore, batch);
             batchConsumer.accept(writeBatch);
-            batch.commit().get();
+            return batch.commit().get();
         } catch (final Exception e) {
             throw new PersistenceException(e);
         }
