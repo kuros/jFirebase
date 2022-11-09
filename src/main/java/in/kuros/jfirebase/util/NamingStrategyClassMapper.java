@@ -14,6 +14,8 @@ import org.apache.http.util.TextUtils;
 
 import java.lang.reflect.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -220,6 +222,10 @@ public class NamingStrategyClassMapper {
             return (T) convertString(o, context);
         } else if (Date.class.isAssignableFrom(clazz)) {
             return (T) convertDate(o, context);
+        } else if (LocalDate.class.isAssignableFrom(clazz)) {
+            return (T) convertLocalDate(o, context);
+        } else if (LocalDateTime.class.isAssignableFrom(clazz)) {
+            return (T) convertLocalDateTime(o, context);
         } else if (Timestamp.class.isAssignableFrom(clazz)) {
             return (T) convertTimestamp(o, context);
         } else if (Blob.class.isAssignableFrom(clazz)) {
@@ -537,6 +543,32 @@ public class NamingStrategyClassMapper {
             return (Date) o;
         } else if (o instanceof Timestamp) {
             return ((Timestamp) o).toDate();
+        } else {
+            throw deserializeError(
+                    context.errorPath,
+                    "Failed to convert value of type " + o.getClass().getName() + " to Date");
+        }
+    }
+
+    private static LocalDate convertLocalDate(Object o, NamingStrategyClassMapper.DeserializeContext context) {
+        if (o instanceof Date) {
+            return DateHelper.toLocalDate((Date) o);
+        } else if (o instanceof Timestamp) {
+            Date date = ((Timestamp) o).toDate();
+            return DateHelper.toLocalDate(date);
+        } else {
+            throw deserializeError(
+                    context.errorPath,
+                    "Failed to convert value of type " + o.getClass().getName() + " to Date");
+        }
+    }
+
+    private static LocalDateTime convertLocalDateTime(Object o, NamingStrategyClassMapper.DeserializeContext context) {
+        if (o instanceof Date) {
+            return DateHelper.toLocalDateTime((Date) o);
+        } else if (o instanceof Timestamp) {
+            Date date = ((Timestamp) o).toDate();
+            return DateHelper.toLocalDateTime(date);
         } else {
             throw deserializeError(
                     context.errorPath,
