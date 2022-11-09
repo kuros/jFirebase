@@ -9,12 +9,9 @@ import com.google.firestore.v1.Value;
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -80,6 +77,10 @@ public class ClassMapper {
             } catch (NoSuchFieldException ex) {
                 return enumName;
             }
+        } else if (o instanceof LocalDate) {
+            return DateHelper.toDate((LocalDate) o);
+        } else if (o instanceof LocalDateTime) {
+            return DateHelper.toDate((LocalDateTime) o);
         } else if (o instanceof Date
                 || o instanceof Timestamp
                 || o instanceof GeoPoint
