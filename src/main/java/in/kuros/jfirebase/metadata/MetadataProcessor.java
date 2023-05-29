@@ -2,14 +2,18 @@ package in.kuros.jfirebase.metadata;
 
 import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.reflection.MetadataScanner;
+import in.kuros.jfirebase.util.ClassLoaderUtil;
 import in.kuros.jfirebase.util.CustomCollectors;
 import org.reflections.Reflections;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import org.reflections.util.Utils;
 
 public final class MetadataProcessor {
@@ -31,7 +35,7 @@ public final class MetadataProcessor {
             final Set<String> classNames = reflections.getStore().values(Utils.index(MetadataScanner.class));
 
             for (String className : classNames) {
-                final Class<?> type = loadClass(className);
+                final Class<?> type = ClassLoaderUtil.loadClass(className);
 
                 final Metadata metadata = type.getAnnotation(Metadata.class);
                 if (metadata == null) {
@@ -61,14 +65,6 @@ public final class MetadataProcessor {
             }
         } catch (final Exception e) {
             throw new EntityDeclarationException(e);
-        }
-    }
-
-    private Class<?> loadClass(String clf) throws ClassNotFoundException {
-        try {
-            return Class.forName(clf);
-        } catch (ClassNotFoundException e) {
-            return Thread.currentThread().getContextClassLoader().loadClass(clf);
         }
     }
 }
