@@ -12,7 +12,7 @@
 
     <groupId>in.kuros</groupId>
     <artifactId>jFirebase</artifactId>
-    <version>1.2.4</version>
+    <version>1.2.5</version>
 
 
     <description>This project aims at building a wrapper over nosql technologies - Firebase</description>
@@ -37,6 +37,14 @@
                 <role>Developer</role>
             </roles>
             <timezone>+5:30</timezone>
+        </developer>
+        <developer>
+            <name>Borislav Gizdov</name>
+            <email>borislav.gizdov at gmail dot com</email>
+            <roles>
+                <role>Developer</role>
+            </roles>
+            <timezone>+2:00</timezone>
         </developer>
     </developers>
 
