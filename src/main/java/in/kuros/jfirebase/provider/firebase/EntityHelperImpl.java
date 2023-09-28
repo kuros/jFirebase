@@ -11,11 +11,9 @@ import in.kuros.jfirebase.exception.PersistenceException;
 import in.kuros.jfirebase.metadata.Attribute;
 import in.kuros.jfirebase.metadata.AttributeValue;
 import in.kuros.jfirebase.metadata.Value;
-import in.kuros.jfirebase.util.BeanMapper;
-import in.kuros.jfirebase.util.ClassMapper;
+import in.kuros.jfirebase.util.*;
 
-import in.kuros.jfirebase.util.PropertyNamingStrategies;
-import in.kuros.jfirebase.util.PropertyNamingStrategy;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -89,24 +87,47 @@ public class EntityHelperImpl implements EntityHelper {
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
         final Optional<String> createTime = beanMapper.getCreateTime();
         if (createTime.isPresent()) {
-            beanMapper.setValue(entity, createTime.get(), date);
+            String createTimeField = createTime.get();
+            if (isFieldLocalDateTime(beanMapper, createTimeField)) {
+                final LocalDateTime localDateTime = DateHelper.toLocalDateTime(date);
+                beanMapper.setValue(entity, createTimeField, localDateTime);
+            } else {
+                beanMapper.setValue(entity, createTimeField, date);
+            }
             return true;
         }
 
         return false;
     }
 
+    private static <T> boolean isFieldLocalDateTime(BeanMapper<T> beanMapper, String fieldName) {
+        final String className = beanMapper.getFields().get(fieldName).getType().getName();
+        return className.equals(LocalDateTime.class.getName());
+    }
+
     @Override public <T> Optional<Date> getCreateTime(T entity) {
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
         Optional<String> optional = beanMapper.getCreateTime();
-        return optional.map(s -> (Date) beanMapper.getValue(entity, s));
+        return optional.map(s -> {
+            if (isFieldLocalDateTime(beanMapper, s)) {
+                return DateHelper.toDate((LocalDateTime) beanMapper.getValue(entity, s));
+            }
+
+            return (Date) beanMapper.getValue(entity, s);
+        });
     }
 
     @Override public <T> boolean setUpdateTime(T entity, Date date) {
         final BeanMapper<T> beanMapper = ClassMapper.getBeanMapper((Class<T>) entity.getClass());
         final Optional<String> updateTime = beanMapper.getUpdateTime();
         if (updateTime.isPresent()) {
-            beanMapper.setValue(entity, updateTime.get(), date);
+            String updatedTimeField = updateTime.get();
+            if (isFieldLocalDateTime(beanMapper, updatedTimeField)) {
+                final LocalDateTime localDateTime = DateHelper.toLocalDateTime(date);
+                beanMapper.setValue(entity, updatedTimeField, localDateTime);
+            } else {
+                beanMapper.setValue(entity, updatedTimeField, date);
+            }
             return true;
         }
 

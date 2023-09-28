@@ -5,6 +5,8 @@ import in.kuros.jfirebase.entity.EntityDeclarationException;
 import in.kuros.jfirebase.metadata.AttributeValue;
 
 import in.kuros.jfirebase.util.PropertyNamingStrategy;
+
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;

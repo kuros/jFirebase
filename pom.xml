@@ -12,7 +12,7 @@
 
     <groupId>in.kuros</groupId>
     <artifactId>jFirebase</artifactId>
-    <version>1.2.5</version>
+    <version>1.2.6</version>
 
 
     <description>This project aims at building a wrapper over nosql technologies - Firebase</description>
